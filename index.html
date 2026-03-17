@@ -334,6 +334,8 @@
   }
   .view-btn.active { background: var(--brown); color: var(--cream); border-color: var(--brown); }
   .view-btn:hover:not(.active) { background: rgba(74,46,26,0.14); }
+  .practice-playlist-btn { margin-top: 12px; font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 7px 20px; background: var(--rust); border: 1px solid var(--rust); border-radius: 2px; color: var(--cream); cursor: pointer; transition: background 0.15s; display: block; }
+  .practice-playlist-btn:hover { background: var(--brown); border-color: var(--brown); }
 
   /* ── Mobile ── */
   @media (max-width: 960px) { .set-card { overflow-x: auto; } }
@@ -382,6 +384,7 @@
       <button class="view-btn active" id="viewBySet" onclick="setView('set')">By Set</button>
       <button class="view-btn" id="viewByArtist" onclick="setView('artist')">By Artist</button>
     </div>
+    <button class="practice-playlist-btn" onclick="makePracticePlaylist()" title="YouTube playlist of songs you haven't checked off yet">▶ Practice Playlist</button>
   </header>
 
   <div class="sets-container" id="setsContainer"></div>
@@ -736,6 +739,23 @@ function ytIdFromUrl(url) {
   const m = (url || '').match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
+
+function makePracticePlaylist() {
+  const saved = loadData();
+  const ids = [];
+  SETS.forEach(set => {
+    set.songs.forEach(song => {
+      const isKnown = saved[`${song.id}_known`] === true || saved[`${song.id}_known`] === 'true';
+      if (isKnown) return;
+      const ytVal = `${song.id}_yt` in saved ? saved[`${song.id}_yt`] : (song.yt || '');
+      const id = ytIdFromUrl(ytVal);
+      if (id) ids.push(id);
+    });
+  });
+  if (!ids.length) { alert('No YouTube links found for unchecked songs.'); return; }
+  window.open('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','), '_blank');
+}
+window.makePracticePlaylist = makePracticePlaylist;
 
 function makePlaylist(setIndex) {
   const saved = loadData();
