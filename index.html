@@ -322,8 +322,22 @@
     .sidebar-toggle { display: flex; align-items: center; gap: 6px; font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em; }
     .main-content { padding-top: 58px; }
   }
+  /* ── View toggle ── */
+  .view-toggle { margin-top: 14px; display: flex; justify-content: center; gap: 6px; }
+  .view-btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 6px 18px;
+    background: rgba(74,46,26,0.07); border: 1px solid var(--tan);
+    border-radius: 2px; color: var(--faded); cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .view-btn.active { background: var(--brown); color: var(--cream); border-color: var(--brown); }
+  .view-btn:hover:not(.active) { background: rgba(74,46,26,0.14); }
+
+  /* ── Mobile ── */
+  @media (max-width: 960px) { .set-card { overflow-x: auto; } }
   @media (max-width: 760px) { thead th.col-ug, .col-ug-cell { display: none; } }
   @media (max-width: 560px) { thead th.col-artist, .col-artist-cell { display: none; } thead th.col-key, .col-key-cell { display: none; } }
+  @media (max-width: 480px) { thead th.col-yt, .col-yt-cell { display: none; } }
 </style>
 </head>
 <body>
@@ -362,6 +376,10 @@
     <div class="ornament">✦ ✦ ✦</div>
     <h1>The Setlist Book</h1>
     <p class="subtitle">Songs · Artists · Links · Tabs</p>
+    <div class="view-toggle">
+      <button class="view-btn active" id="viewBySet" onclick="setView('set')">By Set</button>
+      <button class="view-btn" id="viewByArtist" onclick="setView('artist')">By Artist</button>
+    </div>
   </header>
 
   <div class="sets-container" id="setsContainer"></div>
@@ -633,86 +651,132 @@ function updateGoBtn(input) {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── View state ──
+let currentView = 'set';
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('viewBySet').classList.toggle('active', view === 'set');
+  document.getElementById('viewByArtist').classList.toggle('active', view === 'artist');
+  render();
+}
+window.setView = setView;
+
+// ── Build a song row (shared by both views) ──
+function buildRow(song, rowNum, saved) {
+  const kk = t => `${song.id}_${t}`;
+  const isKnown   = saved[kk('known')] === true || saved[kk('known')] === 'true';
+  const artistVal = kk('artist') in saved ? saved[kk('artist')] : (song.artist || '');
+  const ytVal     = kk('yt') in saved ? saved[kk('yt')] : (song.yt || '');
+  const ugVal     = saved[kk('ug')]  || '';
+  const keyVal    = saved[kk('key')] || '';
+
+  const tr = document.createElement('tr');
+  if (isKnown) tr.classList.add('known');
+  tr.innerHTML = `
+    <td class="check-cell"><input type="checkbox" class="know-check" data-key="${kk('known')}" ${isKnown ? 'checked' : ''}></td>
+    <td><span class="row-num">${rowNum}</span></td>
+    <td><span class="song-name">${esc(song.title)}</span></td>
+    <td class="col-artist-cell">
+      <input class="link-input" type="text" placeholder="Artist…" data-key="${kk('artist')}" value="${esc(artistVal)}" style="width:100%">
+    </td>
+    <td class="col-key-cell" style="text-align:center">
+      <input class="link-input key-input" type="text" maxlength="4" placeholder="–" data-key="${kk('key')}" value="${esc(keyVal)}" style="width:46px;text-align:center;font-family:'Special Elite',cursive;font-size:0.8rem;">
+    </td>
+    <td class="col-yt-cell">
+      <div class="link-cell">
+        <input class="link-input" type="url" placeholder="YouTube URL…" data-key="${kk('yt')}" value="${esc(ytVal)}">
+        <a class="go-btn ${ytVal ? '' : 'disabled'}" ${ytVal ? `href="${esc(ytVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+      </div>
+    </td>
+    <td class="col-ug-cell">
+      <div class="link-cell">
+        <input class="link-input" type="url" placeholder="UG URL…" data-key="${kk('ug')}" value="${esc(ugVal)}">
+        <a class="go-btn ${ugVal ? '' : 'disabled'}" ${ugVal ? `href="${esc(ugVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+      </div>
+    </td>
+    <td class="actions-cell">
+      <a class="detail-btn" href="song.html?id=${song.id}" title="Open song detail">📖</a><button class="row-save-btn" title="Save this row">💾</button>
+    </td>`;
+
+  tr.querySelector('.know-check').addEventListener('change', function() {
+    if (this.checked) tr.classList.add('known'); else tr.classList.remove('known');
+    saveAll(false);
+  });
+  tr.querySelectorAll('.link-input').forEach(inp => {
+    inp.addEventListener('input',  () => updateGoBtn(inp));
+    inp.addEventListener('change', () => saveAll(false));
+  });
+  tr.querySelector('.row-save-btn').addEventListener('click', function() { flashRowSave(this); });
+  return tr;
+}
+
+function tableHeader(extraCol = '') {
+  return `<thead><tr>
+    <th class="col-check">✓</th>
+    <th class="col-num">#</th>
+    <th class="col-song">Song</th>
+    <th class="col-artist">Artist</th>
+    <th class="col-key">Key</th>
+    <th class="col-yt">▶ YouTube</th>
+    <th class="col-ug">🎸 Ult. Guitar</th>
+    ${extraCol}
+    <th class="col-actions">📖 💾</th>
+  </tr></thead>`;
+}
+
 // ── Render setlists ──
 function render() {
   const saved = loadData();
   const container = document.getElementById('setsContainer');
-  SETS.forEach((set, si) => {
+  container.innerHTML = '';
+
+  if (currentView === 'artist') {
+    // Flat list of all songs sorted alphabetically by artist
+    const allSongs = [];
+    SETS.forEach((set, si) => set.songs.forEach(song => allSongs.push({ song, setLabel: set.title })));
+    allSongs.sort((a, b) => {
+      const kk = s => `${s.id}_artist`;
+      const artistA = (saved[kk(a.song)] || a.song.artist || '').toLowerCase();
+      const artistB = (saved[kk(b.song)] || b.song.artist || '').toLowerCase();
+      if (!artistA && !artistB) return 0;
+      if (!artistA) return 1;
+      if (!artistB) return -1;
+      return artistA.localeCompare(artistB);
+    });
+
     const card = document.createElement('div');
     card.className = 'set-card';
     card.innerHTML = `
       <div class="set-header">
-        <span class="set-number">Set ${si + 1}</span>
-        <span class="set-title">${set.title}</span>
-        <div class="legend"><span class="legend-check">✓</span> = know it well</div>
-        <span class="set-count">${set.songs.length} songs</span>
+        <span class="set-title">All Songs — A to Z by Artist</span>
+        <span class="set-count">${allSongs.length} songs</span>
       </div>
-      <table>
-        <thead><tr>
-          <th class="col-check">✓</th>
-          <th class="col-num">#</th>
-          <th class="col-song">Song</th>
-          <th class="col-artist">Artist</th>
-          <th class="col-key">Key</th>
-          <th class="col-yt">▶ YouTube</th>
-          <th class="col-ug">🎸 Ult. Guitar</th>
-          <th class="col-actions">📖 💾</th>
-        </tr></thead>
-        <tbody id="tbody_${si}"></tbody>
-      </table>`;
+      <table>${tableHeader()}</table>`;
+    const tbody = document.createElement('tbody');
+    card.querySelector('table').appendChild(tbody);
     container.appendChild(card);
-    const tbody = card.querySelector(`#tbody_${si}`);
-    set.songs.forEach((song, i) => {
-      const kk = t => `${song.id}_${t}`;
-      const isKnown  = saved[kk('known')] === true || saved[kk('known')] === 'true';
-      const artistVal = kk('artist') in saved ? saved[kk('artist')] : (song.artist || '');
-      const ytVal     = kk('yt') in saved ? saved[kk('yt')] : (song.yt || '');
-      const ugVal     = saved[kk('ug')]  || '';
-      const keyVal    = saved[kk('key')] || '';
+    allSongs.forEach(({ song }, i) => tbody.appendChild(buildRow(song, i + 1, saved)));
 
-      const tr = document.createElement('tr');
-      if (isKnown) tr.classList.add('known');
-      tr.innerHTML = `
-        <td class="check-cell"><input type="checkbox" class="know-check" data-key="${kk('known')}" ${isKnown ? 'checked' : ''}></td>
-        <td><span class="row-num">${i + 1}</span></td>
-        <td><span class="song-name">${esc(song.title)}</span></td>
-        <td class="col-artist-cell"><span class="artist-name">${esc(artistVal)}</span></td>
-        <td class="col-key-cell" style="text-align:center">
-          <input class="link-input key-input" type="text" maxlength="4" placeholder="–" data-key="${kk('key')}" value="${esc(keyVal)}" style="width:46px;text-align:center;font-family:'Special Elite',cursive;font-size:0.8rem;">
-        </td>
-        <td>
-          <div class="link-cell">
-            <input class="link-input" type="url" placeholder="YouTube URL…" data-key="${kk('yt')}" value="${esc(ytVal)}">
-            <a class="go-btn ${ytVal ? '' : 'disabled'}" ${ytVal ? `href="${esc(ytVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
-          </div>
-        </td>
-        <td class="col-ug-cell">
-          <div class="link-cell">
-            <input class="link-input" type="url" placeholder="UG URL…" data-key="${kk('ug')}" value="${esc(ugVal)}">
-            <a class="go-btn ${ugVal ? '' : 'disabled'}" ${ugVal ? `href="${esc(ugVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
-          </div>
-        </td>
-        <td class="actions-cell">
-          <a class="detail-btn" href="song.html?id=${song.id}" title="Open song detail">📖</a><button class="row-save-btn" title="Save this row">💾</button>
-        </td>`;
-      tbody.appendChild(tr);
-
-      const cb = tr.querySelector('.know-check');
-      cb.addEventListener('change', () => {
-        if (cb.checked) tr.classList.add('known'); else tr.classList.remove('known');
-        saveAll(false);
-      });
-
-      tr.querySelectorAll('.link-input').forEach(inp => {
-        inp.addEventListener('input',  () => updateGoBtn(inp));
-        inp.addEventListener('change', () => saveAll(false));
-      });
-
-      tr.querySelector('.row-save-btn').addEventListener('click', function() {
-        flashRowSave(this);
-      });
+  } else {
+    // Default: one card per set
+    SETS.forEach((set, si) => {
+      const card = document.createElement('div');
+      card.className = 'set-card';
+      card.innerHTML = `
+        <div class="set-header">
+          <span class="set-number">Set ${si + 1}</span>
+          <span class="set-title">${set.title}</span>
+          <div class="legend"><span class="legend-check">✓</span> = know it well</div>
+          <span class="set-count">${set.songs.length} songs</span>
+        </div>
+        <table>${tableHeader()}</table>`;
+      const tbody = document.createElement('tbody');
+      card.querySelector('table').appendChild(tbody);
+      container.appendChild(card);
+      set.songs.forEach((song, i) => tbody.appendChild(buildRow(song, i + 1, saved)));
     });
-  });
+  }
 }
 
 // ── Mobile sidebar ──
