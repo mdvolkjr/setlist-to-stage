@@ -363,13 +363,26 @@
 
 <div id="saveFlash">Saved ✓</div>
 
-<script>
+<script type="module">
+// ── Firebase Setup ────────────────────────────────────────────────────────────
+import { initializeApp }                      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { firebaseConfig }                     from './firebase-config.js';
+
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const DATA_DOC = doc(db, 'bandsetlist', 'main'); // same document as index.html
+
 const STORAGE_KEY = 'bandsetlist_v3';
 const YT_BASE = 'https://www.youtube.com/watch?v=';
 
 // ─── Pull song ID from URL ───────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
 const songId = params.get('id') || '';
+
+// ─── App state ───────────────────────────────────────────────────────────────
+// appData caches the full setlistData map so saves don't need to re-fetch
+let appData = {};
 
 // ─── Song data (duplicated here since we're a standalone page) ───────────────
 const ALL_SONGS = [
@@ -423,7 +436,6 @@ const ALL_SONGS = [
 const song = ALL_SONGS.find(s => s.id === songId) || null;
 
 // ─── Storage ─────────────────────────────────────────────────────────────────
-function loadData() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
 function kk(t) { return `${songId}_${t}`; }
 
 // ─── Update a link button ─────────────────────────────────────────────────────
@@ -539,33 +551,55 @@ function renderPerfs() {
 }
 
 // ─── Save all ─────────────────────────────────────────────────────────────────
-function saveAll() {
-  const saved = loadData();
-  saved[kk('yt')]        = document.getElementById('ytInput').value.trim();
-  saved[kk('ss')]        = document.getElementById('ssInput').value.trim();
-  saved[kk('ug')]        = document.getElementById('ugInput').value.trim();
-  saved[kk('tab1')]      = document.getElementById('tab1Input').value.trim();
-  saved[kk('tab2')]      = document.getElementById('tab2Input').value.trim();
-  saved[kk('key')]       = document.getElementById('keyInput').value.trim();
-  saved[kk('tempo')]     = document.getElementById('tempoInput').value.trim();
-  saved[kk('artist')]    = document.getElementById('artistInput').value.trim();
-  saved[kk('known')]     = document.getElementById('knownCheck').checked;
-  saved[kk('structure')] = document.getElementById('structureInput').value.trim();
-  saved[kk('tricky')]    = document.getElementById('trickyInput').value.trim();
-  saved[kk('notes')]     = document.getElementById('notesInput').value.trim();
-  saved[kk('perfs')]     = JSON.stringify(perfs);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+async function saveAll() {
+  // Update this song's keys in the shared appData map, then write to Firestore.
+  // Using the same document as index.html means all band members share one source of truth.
+  appData[kk('yt')]        = document.getElementById('ytInput').value.trim();
+  appData[kk('ss')]        = document.getElementById('ssInput').value.trim();
+  appData[kk('ug')]        = document.getElementById('ugInput').value.trim();
+  appData[kk('tab1')]      = document.getElementById('tab1Input').value.trim();
+  appData[kk('tab2')]      = document.getElementById('tab2Input').value.trim();
+  appData[kk('key')]       = document.getElementById('keyInput').value.trim();
+  appData[kk('tempo')]     = document.getElementById('tempoInput').value.trim();
+  appData[kk('artist')]    = document.getElementById('artistInput').value.trim();
+  appData[kk('known')]     = document.getElementById('knownCheck').checked;
+  appData[kk('structure')] = document.getElementById('structureInput').value.trim();
+  appData[kk('tricky')]    = document.getElementById('trickyInput').value.trim();
+  appData[kk('notes')]     = document.getElementById('notesInput').value.trim();
+  appData[kk('perfs')]     = JSON.stringify(perfs);
+  try {
+    // merge: true keeps gigs and bandName untouched
+    await setDoc(DATA_DOC, { setlistData: appData }, { merge: true });
+  } catch (e) {
+    console.warn('Firebase save failed — using localStorage as fallback:', e.message);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  }
   const f = document.getElementById('saveFlash');
   f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 1800);
 }
+window.saveAll = saveAll; // expose for inline onclick
+
+// ─── Expose onclick functions to window (required for type="module" scripts) ──
+window.loadYT    = loadYT;
+window.loadSS    = loadSS;
+window.addPerf   = addPerf;
 
 // ─── Initialize ───────────────────────────────────────────────────────────────
-function init() {
+async function init() {
+  // Load from Firestore (setlistData field), fall back to localStorage if unavailable
+  try {
+    const snap = await getDoc(DATA_DOC);
+    appData = snap.exists() ? (snap.data().setlistData || {}) : {};
+  } catch (e) {
+    console.warn('Firebase load failed — using localStorage as fallback:', e.message);
+    try { appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { appData = {}; }
+  }
+
   if (!song) {
     document.getElementById('heroTitle').textContent = 'Song not found';
     return;
   }
-  const saved = loadData();
+  const saved = appData;
 
   // Hero
   document.title = song.title + ' — Setlist';

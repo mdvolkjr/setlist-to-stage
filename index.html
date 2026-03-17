@@ -377,11 +377,23 @@
   <div class="float-save-label" id="floatSaveLabel">Saved ✓</div>
 </div>
 
-<script>
-const YT = 'https://www.youtube.com/watch?v=';
-const STORAGE_KEY  = 'bandsetlist_v3';
-const GIGS_KEY     = 'bandsetlist_gigs';
-const BAND_KEY     = 'bandsetlist_band';
+<script type="module">
+// ── Firebase Setup ────────────────────────────────────────────────────────────
+// Uses Firebase v10 loaded from Google's CDN — no npm or build step needed.
+import { initializeApp }                      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { firebaseConfig }                     from './firebase-config.js';
+
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+// Everything lives in one Firestore document: collection "bandsetlist", doc "main"
+// Fields: setlistData (map), gigs (array), bandName (string)
+const DATA_DOC = doc(db, 'bandsetlist', 'main');
+
+const YT          = 'https://www.youtube.com/watch?v=';
+const STORAGE_KEY = 'bandsetlist_v3';   // localStorage keys used only as fallback
+const GIGS_KEY    = 'bandsetlist_gigs';
+const BAND_KEY    = 'bandsetlist_band';
 
 const SETS = [
   { title: "Set One", songs: [
@@ -438,12 +450,31 @@ const SETS = [
 ];
 window.SETS = SETS;
 
-// ── Data helpers ──
-function loadData()    { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
-function loadGigs()    { try { return JSON.parse(localStorage.getItem(GIGS_KEY))    || []; } catch { return []; } }
-function saveGigs(g)   { localStorage.setItem(GIGS_KEY, JSON.stringify(g)); }
-function loadBandName(){ return localStorage.getItem(BAND_KEY) || ''; }
-function saveBandName(n){ localStorage.setItem(BAND_KEY, n); }
+// ── App state (cached in memory; loaded once from Firestore on startup) ────────
+let appData     = {};  // flat key-value setlist map
+let gigsArr     = [];  // gigs array
+let bandNameStr = '';  // band name
+
+// ── Cloud helpers ─────────────────────────────────────────────────────────────
+async function saveToCloud(update) {
+  // update is a partial object — merge: true leaves unrelated fields alone
+  try {
+    await setDoc(DATA_DOC, update, { merge: true });
+  } catch (e) {
+    console.warn('Firebase save failed — using localStorage as fallback:', e.message);
+    if (update.setlistData !== undefined) localStorage.setItem(STORAGE_KEY, JSON.stringify(update.setlistData));
+    if (update.gigs        !== undefined) localStorage.setItem(GIGS_KEY,    JSON.stringify(update.gigs));
+    if (update.bandName    !== undefined) localStorage.setItem(BAND_KEY,    update.bandName);
+  }
+}
+
+// ── Data accessors (synchronous after init loads everything) ──────────────────
+function loadData()     { return appData; }
+function loadGigs()     { return gigsArr; }
+function loadBandName() { return bandNameStr; }
+
+function saveGigs(g)    { gigsArr = g;    saveToCloud({ gigs: g }); }
+function saveBandName(n){ bandNameStr = n; saveToCloud({ bandName: n }); }
 
 // ── Date helpers ──
 function daysUntil(dateStr) {
@@ -521,6 +552,7 @@ function deleteGig(id) {
 }
 
 // ── Add gig form ──
+// (exposed below after definition)
 function showAddGigForm() {
   document.getElementById('addGigBtn').style.display = 'none';
   const area = document.getElementById('addGigFormArea');
@@ -565,12 +597,13 @@ function initBandName() {
 
 // ── Save all setlist data ──
 function saveAll(fromFloat) {
-  const data = {};
+  // Merge DOM values into appData (preserving song-detail keys like notes, songsterr, etc.)
   document.querySelectorAll('[data-key]').forEach(el => {
     const val = el.type === 'checkbox' ? el.checked : el.value.trim();
-    if (val !== false && val !== '') data[el.dataset.key] = val;
+    if (val !== false && val !== '') appData[el.dataset.key] = val;
+    else delete appData[el.dataset.key];
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  saveToCloud({ setlistData: appData });
 
   if (fromFloat) {
     const btn   = document.getElementById('floatSaveBtn');
@@ -580,6 +613,7 @@ function saveAll(fromFloat) {
     setTimeout(() => { btn.classList.remove('saved'); label.classList.remove('show'); }, 2000);
   }
 }
+window.saveAll = saveAll; // expose for inline onclick
 
 // ── Per-row save ──
 function flashRowSave(btn) {
@@ -691,10 +725,42 @@ function closeSidebar() {
   document.getElementById('sidebarOverlay').classList.remove('show');
 }
 
+// Expose all functions used in inline onclick attributes
+window.showAddGigForm  = showAddGigForm;
+window.hideAddGigForm  = hideAddGigForm;
+window.saveNewGig      = saveNewGig;
+window.toggleSidebar   = toggleSidebar;
+window.closeSidebar    = closeSidebar;
+
 // ── Init ──
-initBandName();
-renderGigList();
-render();
+// Load all data from Firestore first, then render the UI.
+async function init() {
+  try {
+    const snap = await getDoc(DATA_DOC);
+    if (snap.exists()) {
+      const d  = snap.data();
+      appData     = d.setlistData || {};
+      gigsArr     = d.gigs        || [];
+      bandNameStr = d.bandName    || '';
+    } else {
+      // Nothing in Firestore yet — check localStorage for any existing data to migrate
+      try { appData     = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch {}
+      try { gigsArr     = JSON.parse(localStorage.getItem(GIGS_KEY))    || []; } catch {}
+      bandNameStr = localStorage.getItem(BAND_KEY) || '';
+    }
+  } catch (e) {
+    // Firebase not configured yet (placeholder config) — fall back to localStorage silently
+    console.warn('Firebase load failed — using localStorage as fallback:', e.message);
+    try { appData     = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch {}
+    try { gigsArr     = JSON.parse(localStorage.getItem(GIGS_KEY))    || []; } catch {}
+    bandNameStr = localStorage.getItem(BAND_KEY) || '';
+  }
+  initBandName();
+  renderGigList();
+  render();
+}
+
+init();
 </script>
 </body>
 </html>
