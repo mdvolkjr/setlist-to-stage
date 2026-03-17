@@ -792,10 +792,11 @@ function render() {
       const kk = s => `${s.id}_artist`;
       const artistA = (saved[kk(a.song)] || a.song.artist || '').toLowerCase();
       const artistB = (saved[kk(b.song)] || b.song.artist || '').toLowerCase();
-      if (!artistA && !artistB) return 0;
+      if (!artistA && !artistB) return a.song.title.localeCompare(b.song.title);
       if (!artistA) return 1;
       if (!artistB) return -1;
-      return artistA.localeCompare(artistB);
+      const artistCmp = artistA.localeCompare(artistB);
+      return artistCmp !== 0 ? artistCmp : a.song.title.localeCompare(b.song.title);
     });
 
     const card = document.createElement('div');
