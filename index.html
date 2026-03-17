@@ -619,9 +619,13 @@ function initBandName() {
 function saveAll(fromFloat) {
   // Merge DOM values into appData (preserving song-detail keys like notes, songsterr, etc.)
   document.querySelectorAll('[data-key]').forEach(el => {
-    const val = el.type === 'checkbox' ? el.checked : el.value.trim();
-    if (val !== false && val !== '') appData[el.dataset.key] = val;
-    else delete appData[el.dataset.key];
+    if (el.type === 'checkbox') {
+      appData[el.dataset.key] = el.checked; // always save true/false explicitly
+    } else {
+      const val = el.value.trim();
+      if (val !== '') appData[el.dataset.key] = val;
+      else delete appData[el.dataset.key];
+    }
   });
   saveToCloud({ setlistData: appData });
 
