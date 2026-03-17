@@ -194,6 +194,8 @@
   .legend { margin-left: auto; font-family: 'Special Elite', cursive; font-size: 0.62rem; color: var(--tan); letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px; }
   .legend-check { width: 13px; height: 13px; background: var(--green); border-radius: 2px; display:inline-flex; align-items:center; justify-content:center; color:white; font-size:9px; }
   .set-count { font-family: 'Special Elite', cursive; color: var(--tan); font-size: 0.8rem; opacity: 0.7; }
+  .playlist-btn { font-family: 'Special Elite', cursive; font-size: 0.65rem; letter-spacing: 0.08em; color: var(--cream); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 4px; padding: 4px 9px; cursor: pointer; transition: background 0.15s; text-decoration: none; white-space: nowrap; }
+  .playlist-btn:hover { background: var(--rust); border-color: var(--rust); }
 
   table { width: 100%; border-collapse: collapse; }
   thead tr { border-bottom: 2px solid var(--line); }
@@ -725,6 +727,24 @@ function tableHeader(extraCol = '') {
   </tr></thead>`;
 }
 
+// ── YouTube playlist helper ──
+function ytIdFromUrl(url) {
+  const m = (url || '').match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function makePlaylist(setIndex) {
+  const saved = loadData();
+  const songs = SETS[setIndex].songs;
+  const ids = songs.map(song => {
+    const ytVal = `${song.id}_yt` in saved ? saved[`${song.id}_yt`] : (song.yt || '');
+    return ytIdFromUrl(ytVal);
+  }).filter(Boolean);
+  if (!ids.length) { alert('No YouTube links found for this set.'); return; }
+  window.open('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','), '_blank');
+}
+window.makePlaylist = makePlaylist;
+
 // ── Render setlists ──
 function render() {
   const saved = loadData();
@@ -768,6 +788,7 @@ function render() {
           <span class="set-number">Set ${si + 1}</span>
           <span class="set-title">${set.title}</span>
           <div class="legend"><span class="legend-check">✓</span> = know it well</div>
+          <button class="playlist-btn" onclick="makePlaylist(${si})" title="Open all YouTube links as a playlist">▶ YouTube Playlist</button>
           <span class="set-count">${set.songs.length} songs</span>
         </div>
         <table>${tableHeader()}</table>`;
