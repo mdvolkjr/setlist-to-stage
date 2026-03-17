@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
+    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
+    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
+    --gold: #b8860b;
+  }
+  body {
+    background-color: var(--cream);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.2) 27px, rgba(196,176,138,0.2) 28px);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    color: var(--ink); min-height: 100vh; padding: 0 0 60px;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--brown); padding: 12px 24px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .back-btn {
+    font-family: 'Special Elite', cursive; font-size: 0.75rem;
+    color: var(--tan); text-decoration: none; letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--cream); }
+  .topbar-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1rem; font-weight: 700; flex: 1; text-align: center; }
+  .save-top-btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em;
+    background: var(--rust); color: var(--cream); border: none;
+    border-radius: 3px; padding: 7px 16px; cursor: pointer;
+    transition: background 0.15s; text-transform: uppercase;
+  }
+  .save-top-btn:hover { background: var(--tan); color: var(--brown); }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--brown) 0%, #3a1e0c 100%);
+    padding: 36px 32px 28px;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: '♩'; position: absolute; right: 32px; top: 16px;
+    font-size: 120px; color: rgba(200,169,122,0.08); line-height: 1;
+    pointer-events: none; font-family: serif;
+  }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .song-title-big {
+    font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 3rem);
+    color: var(--cream); font-weight: 700; line-height: 1.1; margin-bottom: 6px;
+  }
+  .song-artist-big { font-family: 'Playfair Display', serif; font-style: italic; color: var(--tan); font-size: 1.1rem; margin-bottom: 20px; }
+  .hero-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .meta-chip {
+    font-family: 'Special Elite', cursive; font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 12px;
+    border-radius: 20px; display: flex; align-items: center; gap: 5px;
+  }
+  .chip-known { background: rgba(58,107,58,0.35); color: #90d890; border: 1px solid rgba(58,107,58,0.5); }
+  .chip-key { background: rgba(139,58,26,0.35); color: var(--tan); border: 1px solid rgba(139,58,26,0.5); }
+  .chip-set { background: rgba(200,169,122,0.15); color: var(--tan); border: 1px solid rgba(200,169,122,0.3); }
+
+  /* LAYOUT */
+  .page-body { max-width: 980px; margin: 0 auto; padding: 32px 20px 0; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .full-col { margin-bottom: 24px; }
+
+  /* PANELS */
+  .panel {
+    background: var(--parchment); border: 1px solid var(--tan);
+    border-radius: 3px; overflow: hidden;
+    box-shadow: 2px 3px 12px rgba(74,46,26,0.1);
+  }
+  .panel-header {
+    background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line);
+    padding: 10px 16px; font-family: 'Special Elite', cursive;
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faded); display: flex; align-items: center; gap: 8px;
+  }
+  .panel-header .icon { font-size: 14px; }
+  .panel-body { padding: 16px; }
+
+  /* VIDEO EMBED */
+  .video-wrap {
+    position: relative; width: 100%; padding-bottom: 56.25%; background: #111;
+    border-radius: 2px; overflow: hidden;
+  }
+  .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+  .video-placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: var(--tan);
+    font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.1em;
+    gap: 10px;
+  }
+  .video-placeholder .play-icon { font-size: 40px; opacity: 0.4; }
+  .vid-url-row { display: flex; gap: 6px; margin-top: 10px; }
+  .vid-url-row input { flex: 1; }
+
+  /* SONGSTERR EMBED */
+  .songsterr-wrap {
+    position: relative; width: 100%; height: 300px; background: #f8f8f8;
+    border-radius: 2px; overflow: hidden;
+  }
+  .songsterr-wrap iframe { width: 100%; height: 100%; border: none; }
+  .ss-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--faded); font-family: 'Special Elite', cursive;
+    font-size: 0.8rem; letter-spacing: 0.08em; gap: 8px;
+  }
+  .ss-placeholder .ss-icon { font-size: 36px; opacity: 0.35; }
+
+  /* INPUTS */
+  .field-label {
+    font-family: 'Special Elite', cursive; font-size: 0.65rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--faded); margin-bottom: 5px; display: block;
+  }
+  .text-input {
+    width: 100%; background: rgba(255,255,255,0.6); border: 1px solid var(--line);
+    border-radius: 3px; padding: 7px 10px; font-family: 'Libre Baskerville', serif;
+    font-size: 0.85rem; color: var(--ink); outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .text-input:focus { border-color: var(--rust); background: #fff; }
+  .text-input::placeholder { color: var(--tan); font-style: italic; }
+  textarea.text-input { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .row-2 { grid-template-columns: 1fr; } }
+
+  /* EXTRA PERFORMANCES */
+  .perf-list { display: flex; flex-direction: column; gap: 8px; }
+  .perf-item {
+    display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.4);
+    border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px;
+  }
+  .perf-item input { flex: 1; background: transparent; border: none; outline: none;
+    font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); }
+  .perf-item input::placeholder { color: var(--tan); font-style: italic; }
+  .perf-item-url { font-size: 0.72rem; color: var(--faded); }
+  .perf-open { flex-shrink: 0; width: 26px; height: 26px; background: var(--rust); border: none;
+    border-radius: 3px; color: var(--cream); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; text-decoration: none;
+    transition: background 0.15s;
+  }
+  .perf-open:hover { background: var(--brown); }
+  .perf-open.disabled { background: var(--line); pointer-events: none; }
+  .perf-open svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .perf-delete { flex-shrink: 0; width: 26px; height: 26px; background: rgba(139,58,26,0.15);
+    border: 1px solid rgba(139,58,26,0.2); border-radius: 3px; color: var(--rust);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; transition: background 0.15s;
+  }
+  .perf-delete:hover { background: var(--rust); color: white; }
+  .add-perf-btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em;
+    background: rgba(74,46,26,0.08); color: var(--brown); border: 1px dashed var(--tan);
+    border-radius: 3px; padding: 8px 16px; cursor: pointer; width: 100%;
+    text-transform: uppercase; transition: background 0.15s; margin-top: 8px;
+  }
+  .add-perf-btn:hover { background: rgba(74,46,26,0.15); }
+
+  /* TABS LINKS */
+  .tabs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .tabs-grid { grid-template-columns: 1fr; } }
+  .tab-entry { display: flex; flex-direction: column; gap: 4px; }
+  .tab-link-row { display: flex; gap: 6px; }
+  .tab-go {
+    flex-shrink: 0; width: 30px; height: 33px; background: var(--rust); border: none;
+    border-radius: 3px; color: var(--cream); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; text-decoration: none;
+    transition: background 0.15s;
+  }
+  .tab-go:hover { background: var(--brown); }
+  .tab-go.disabled { background: var(--line); pointer-events: none; }
+  .tab-go svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* SAVE FLASH */
+  #saveFlash {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--brown); color: var(--cream);
+    font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.1em;
+    padding: 10px 20px; border-radius: 4px;
+    box-shadow: 2px 3px 12px rgba(0,0,0,0.3);
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    text-transform: uppercase;
+  }
+  #saveFlash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="back-btn">← Back to Setlists</a>
+  <div class="topbar-title" id="topbarTitle">Song Detail</div>
+  <button class="save-top-btn" onclick="saveAll()">💾 Save</button>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="song-title-big" id="heroTitle">Loading…</div>
+    <div class="song-artist-big" id="heroArtist"></div>
+    <div class="hero-meta" id="heroMeta"></div>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- ROW 1: Video + Songsterr -->
+  <div class="two-col">
+
+    <!-- YouTube Preview -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">▶</span> YouTube — Main Video</div>
+      <div class="panel-body">
+        <div class="video-wrap" id="ytWrap">
+          <div class="video-placeholder" id="ytPlaceholder">
+            <div class="play-icon">▶</div>
+            <span>No YouTube URL saved</span>
+          </div>
+        </div>
+        <div class="vid-url-row" style="margin-top:10px">
+          <input class="text-input" id="ytInput" type="url" placeholder="https://youtube.com/watch?v=…" style="font-size:0.75rem;padding:6px 8px;">
+          <button onclick="loadYT()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:'Special Elite',cursive;font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Songsterr -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">🎵</span> Songsterr — Tab Preview</div>
+      <div class="panel-body">
+        <div class="songsterr-wrap" id="ssWrap">
+          <div class="ss-placeholder" id="ssPlaceholder">
+            <div class="ss-icon">🎸</div>
+            <span>No Songsterr URL saved</span>
+          </div>
+        </div>
+        <div class="vid-url-row" style="margin-top:10px">
+          <input class="text-input" id="ssInput" type="url" placeholder="https://www.songsterr.com/a/wsa/…" style="font-size:0.75rem;padding:6px 8px;">
+          <button onclick="loadSS()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:'Special Elite',cursive;font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Song Info + Tab Links -->
+  <div class="two-col">
+
+    <!-- Song Info -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">🎵</span> Song Info</div>
+      <div class="panel-body">
+        <div class="row-2" style="margin-bottom:12px">
+          <div>
+            <label class="field-label">Key</label>
+            <input class="text-input" id="keyInput" type="text" maxlength="6" placeholder="e.g. G, Am, Bb…">
+          </div>
+          <div>
+            <label class="field-label">Tempo / Feel</label>
+            <input class="text-input" id="tempoInput" type="text" placeholder="e.g. 120 bpm, slow shuffle">
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="field-label">Artist</label>
+          <input class="text-input" id="artistInput" type="text" placeholder="Artist name">
+        </div>
+        <div>
+          <label class="field-label">Know it well?</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:4px">
+            <input type="checkbox" id="knownCheck" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;">
+            <span style="font-size:0.85rem;color:var(--faded)">Check when you've got this one down</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Links -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">🎸</span> Tab Links</div>
+      <div class="panel-body">
+        <div class="tabs-grid">
+          <div class="tab-entry">
+            <label class="field-label">Ultimate Guitar</label>
+            <div class="tab-link-row">
+              <input class="text-input" id="ugInput" type="url" placeholder="UG URL…" style="font-size:0.75rem;padding:6px 8px;">
+              <a class="tab-go disabled" id="ugGo" target="_blank"><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+            </div>
+          </div>
+          <div class="tab-entry">
+            <label class="field-label">Songsterr</label>
+            <div class="tab-link-row">
+              <input class="text-input" id="ssTabInput" type="url" placeholder="Songsterr URL…" style="font-size:0.75rem;padding:6px 8px;">
+              <a class="tab-go disabled" id="ssTabGo" target="_blank"><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+            </div>
+          </div>
+          <div class="tab-entry">
+            <label class="field-label">Other Tabs 1</label>
+            <div class="tab-link-row">
+              <input class="text-input" id="tab1Input" type="url" placeholder="URL…" style="font-size:0.75rem;padding:6px 8px;">
+              <a class="tab-go disabled" id="tab1Go" target="_blank"><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+            </div>
+          </div>
+          <div class="tab-entry">
+            <label class="field-label">Other Tabs 2</label>
+            <div class="tab-link-row">
+              <input class="text-input" id="tab2Input" type="url" placeholder="URL…" style="font-size:0.75rem;padding:6px 8px;">
+              <a class="tab-go disabled" id="tab2Go" target="_blank"><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="full-col">
+    <div class="panel">
+      <div class="panel-header"><span class="icon">📝</span> Notes</div>
+      <div class="panel-body">
+        <div class="row-2" style="margin-bottom:12px">
+          <div>
+            <label class="field-label">Intro / Structure</label>
+            <textarea class="text-input" id="structureInput" placeholder="e.g. Verse-Chorus-Verse-Bridge-Chorus, 4-bar intro…" style="min-height:70px"></textarea>
+          </div>
+          <div>
+            <label class="field-label">Tricky Parts / Watch-outs</label>
+            <textarea class="text-input" id="trickyInput" placeholder="e.g. Bridge changes key, lead comes in early…" style="min-height:70px"></textarea>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">General Notes</label>
+          <textarea class="text-input" id="notesInput" placeholder="Anything else — feel, dynamics, who solos, crowd reactions…" style="min-height:100px"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Performances -->
+  <div class="full-col">
+    <div class="panel">
+      <div class="panel-header"><span class="icon">🎬</span> Additional Performances / Versions</div>
+      <div class="panel-body">
+        <div class="perf-list" id="perfList"></div>
+        <button class="add-perf-btn" onclick="addPerf()">+ Add Another Performance or Version</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end page-body -->
+
+<div id="saveFlash">Saved ✓</div>
+
+<script>
+const STORAGE_KEY = 'bandsetlist_v3';
+const YT_BASE = 'https://www.youtube.com/watch?v=';
+
+// ─── Pull song ID from URL ───────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const songId = params.get('id') || '';
+
+// ─── Song data (duplicated here since we're a standalone page) ───────────────
+const ALL_SONGS = [
+  {id:'s0i0',  title:"Lonesome Me",                     artist:"Neil Young",        yt:YT_BASE+'EsA5tLr4_Pw', set:'Set One'},
+  {id:'s0i1',  title:"Downhill",                        artist:"Sister Hazel",      yt:'',                    set:'Set One'},
+  {id:'s0i2',  title:"Fireman",                         artist:"George Strait",     yt:YT_BASE+'PGdWmexwJok', set:'Set One'},
+  {id:'s0i3',  title:"Dead Flowers",                    artist:"Rolling Stones",    yt:YT_BASE+'V3RLjuLWjUk', set:'Set One'},
+  {id:'s0i4',  title:"Give Me a Ride",                  artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i5',  title:"Till I Hear It From You",         artist:"Gin Blossoms",      yt:YT_BASE+'o7sx32alzeE', set:'Set One'},
+  {id:'s0i6',  title:"Can't Wait Anymore",              artist:"Sister Hazel",      yt:'',                    set:'Set One'},
+  {id:'s0i7',  title:"Blame It on Your Heart",          artist:"Patty Loveless",    yt:YT_BASE+'qFf9E1B3RFM', set:'Set One'},
+  {id:'s0i8',  title:"Turn It On",                      artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i9',  title:"Cryin, Waitin",                   artist:"Buddy Holly",       yt:YT_BASE+'qrUfGaGT8VQ', set:'Set One'},
+  {id:'s0i10', title:"To Be Real",                      artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i11', title:"Jefferson Street",                artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i12', title:"Thick of It",                     artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i13', title:"Anyplace",                        artist:"",                  yt:'',                    set:'Set One'},
+  {id:'s0i14', title:"All You Ever Do Is Bring Me Down",artist:"The Mavericks",     yt:YT_BASE+'pHJb4DXSEGk', set:'Set One'},
+  {id:'s1i0',  title:"Timber",                          artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s1i1',  title:"Let Her Dance",                   artist:"Bobby Fuller Four", yt:YT_BASE+'XJuEHB6S3Jk', set:'Set Two'},
+  {id:'s1i2',  title:"All Once in Here",                artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s1i3',  title:"Pretty Wanted",                   artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s1i4',  title:"Tempted",                         artist:"Squeeze",           yt:YT_BASE+'_gMpmtJ3V_g', set:'Set Two'},
+  {id:'s1i5',  title:"Georgia on a Fast Train",         artist:"Billy Joe Shaver",  yt:YT_BASE+'RJLq7gvEE_Q', set:'Set Two'},
+  {id:'s1i6',  title:"Home of the Blues",               artist:"Johnny Cash",       yt:YT_BASE+'u6RzHCNwWVg', set:'Set Two'},
+  {id:'s1i7',  title:"Hello Mary Lou",                  artist:"Ricky Nelson",      yt:YT_BASE+'hWi3nGHeTHk', set:'Set Two'},
+  {id:'s1i8',  title:"Wanna Believe",                   artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s1i9',  title:"Mama Tried",                      artist:"Merle Haggard",     yt:YT_BASE+'LSoDyG6kGOA', set:'Set Two'},
+  {id:'s1i10', title:"Honky Tonk Women",                artist:"Rolling Stones",    yt:YT_BASE+'oHpSdGUe5wE', set:'Set Two'},
+  {id:'s1i11', title:"Ain't That Lonely Yet",           artist:"Dwight Yoakam",     yt:YT_BASE+'ikEL0PJRbdk', set:'Set Two'},
+  {id:'s1i12', title:"Freeborn",                        artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s1i13', title:"Don't Look Back in Anger",        artist:"Oasis",             yt:YT_BASE+'cmpVEMbKGAM', set:'Set Two'},
+  {id:'s1i14', title:"You Don't Know How It Feels",     artist:"Tom Petty",         yt:YT_BASE+'MBgSfT6cqXI', set:'Set Two'},
+  {id:'s1i15', title:"Not Dead Anymore",                artist:"",                  yt:'',                    set:'Set Two'},
+  {id:'s2i0',  title:"Who Were You Thinking Of",        artist:"Texas Tornados",    yt:YT_BASE+'wQ6FJCiKaeQ', set:'Set Three'},
+  {id:'s2i1',  title:"Guitars Cadillacs",               artist:"Dwight Yoakam",     yt:YT_BASE+'hT2sdgBtAW8', set:'Set Three'},
+  {id:'s2i2',  title:"Give Me a Ride",                  artist:"",                  yt:'',                    set:'Set Three'},
+  {id:'s2i3',  title:"Blame It on Your Heart",          artist:"Patty Loveless",    yt:YT_BASE+'qFf9E1B3RFM', set:'Set Three'},
+  {id:'s2i4',  title:"To Be Real",                      artist:"",                  yt:'',                    set:'Set Three'},
+  {id:'s2i5',  title:"Till I Hear It From You",         artist:"Gin Blossoms",      yt:YT_BASE+'o7sx32alzeE', set:'Set Three'},
+  {id:'s2i6',  title:"Downhill",                        artist:"Sister Hazel",      yt:'',                    set:'Set Three'},
+  {id:'s2i7',  title:"Don't Change",                    artist:"INXS",              yt:YT_BASE+'4LmHMZeS4pM', set:'Set Three'},
+  {id:'s2i8',  title:"Dance the Night Away",            artist:"The Mavericks",     yt:YT_BASE+'A9L8hQHkAiE', set:'Set Three'},
+  {id:'s2i9',  title:"Can't Wait Anymore",              artist:"Sister Hazel",      yt:'',                    set:'Set Three'},
+  {id:'s2i10', title:"Rainy Day Woman",                 artist:"",                  yt:'',                    set:'Set Three'},
+  {id:'s2i11', title:"Anyplace",                        artist:"",                  yt:'',                    set:'Set Three'},
+  {id:'s2i12', title:"Dead Flowers",                    artist:"Rolling Stones",    yt:YT_BASE+'V3RLjuLWjUk', set:'Set Three'},
+  {id:'s2i13', title:"Lonesome Me",                     artist:"Neil Young",        yt:YT_BASE+'EsA5tLr4_Pw', set:'Set Three'},
+];
+
+const song = ALL_SONGS.find(s => s.id === songId) || null;
+
+// ─── Storage ─────────────────────────────────────────────────────────────────
+function loadData() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+function kk(t) { return `${songId}_${t}`; }
+
+// ─── Update a link button ─────────────────────────────────────────────────────
+function wireLink(inputEl, btnEl) {
+  function update() {
+    const v = inputEl.value.trim();
+    if (v) { btnEl.classList.remove('disabled'); btnEl.href = v.startsWith('http') ? v : 'https://'+v; btnEl.target = '_blank'; }
+    else { btnEl.classList.add('disabled'); btnEl.removeAttribute('href'); btnEl.removeAttribute('target'); }
+  }
+  inputEl.addEventListener('input', update);
+  update();
+}
+
+// ─── YouTube embed ────────────────────────────────────────────────────────────
+function ytIdFromUrl(url) {
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function loadYT() {
+  const url = document.getElementById('ytInput').value.trim();
+  const wrap = document.getElementById('ytWrap');
+  const ph = document.getElementById('ytPlaceholder');
+  const id = ytIdFromUrl(url);
+  if (id) {
+    ph && ph.remove();
+    const existing = wrap.querySelector('iframe');
+    if (existing) existing.remove();
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${id}`;
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    wrap.appendChild(iframe);
+  } else {
+    wrap.innerHTML = '<div class="video-placeholder"><div class="play-icon">▶</div><span>Enter a valid YouTube URL above</span></div>';
+  }
+}
+
+// ─── Songsterr embed ──────────────────────────────────────────────────────────
+function ssIdFromUrl(url) {
+  // e.g. https://www.songsterr.com/a/wsa/song-name-tab-s12345t0
+  const m = url.match(/tab-s(\d+)/i) || url.match(/\/s(\d+)/i);
+  return m ? m[1] : null;
+}
+function loadSS() {
+  const url = document.getElementById('ssInput').value.trim();
+  // Sync to tab input
+  document.getElementById('ssTabInput').value = url;
+  wireLink(document.getElementById('ssTabInput'), document.getElementById('ssTabGo'));
+  const wrap = document.getElementById('ssWrap');
+  const ph = document.getElementById('ssPlaceholder');
+  const ssId = ssIdFromUrl(url);
+  if (ssId) {
+    ph && ph.remove();
+    const existing = wrap.querySelector('iframe');
+    if (existing) existing.remove();
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.songsterr.com/a/wa/song?id=${ssId}`;
+    wrap.appendChild(iframe);
+  } else if (url.includes('songsterr.com')) {
+    // Try direct embed
+    ph && ph.remove();
+    const existing = wrap.querySelector('iframe');
+    if (existing) existing.remove();
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    wrap.appendChild(iframe);
+  } else {
+    wrap.innerHTML = '<div class="ss-placeholder"><div class="ss-icon">🎸</div><span>Enter a Songsterr URL above</span></div>';
+  }
+}
+
+// ─── Extra performances ───────────────────────────────────────────────────────
+let perfs = [];
+
+function addPerf(label = '', url = '') {
+  const idx = perfs.length;
+  perfs.push({ label, url });
+  renderPerfs();
+}
+
+function renderPerfs() {
+  const list = document.getElementById('perfList');
+  list.innerHTML = '';
+  perfs.forEach((p, idx) => {
+    const div = document.createElement('div');
+    div.className = 'perf-item';
+    div.innerHTML = `
+      <input type="text" placeholder="Label (e.g. Live at Austin, 2004)" value="${p.label.replace(/"/g,'&quot;')}" data-pidx="${idx}" data-field="label">
+      <input type="url" placeholder="YouTube or other URL" value="${p.url.replace(/"/g,'&quot;')}" data-pidx="${idx}" data-field="url" class="perf-item-url" style="min-width:0;flex:1.5">
+      <a class="perf-open ${p.url ? '' : 'disabled'}" ${p.url ? `href="${p.url}" target="_blank"` : ''}>
+        <svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg>
+      </a>
+      <button class="perf-delete" data-del="${idx}" title="Remove">✕</button>`;
+    list.appendChild(div);
+    div.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.pidx);
+        perfs[i][inp.dataset.field] = inp.value;
+        // update open button
+        const openBtn = inp.parentElement.querySelector('.perf-open');
+        if (openBtn) {
+          const u = perfs[i].url;
+          if (u) { openBtn.classList.remove('disabled'); openBtn.href = u; openBtn.target = '_blank'; }
+          else { openBtn.classList.add('disabled'); openBtn.removeAttribute('href'); }
+        }
+      });
+    });
+    div.querySelector('[data-del]').addEventListener('click', e => {
+      perfs.splice(parseInt(e.target.dataset.del), 1);
+      renderPerfs();
+    });
+  });
+}
+
+// ─── Save all ─────────────────────────────────────────────────────────────────
+function saveAll() {
+  const saved = loadData();
+  saved[kk('yt')]        = document.getElementById('ytInput').value.trim();
+  saved[kk('ss')]        = document.getElementById('ssInput').value.trim();
+  saved[kk('ug')]        = document.getElementById('ugInput').value.trim();
+  saved[kk('tab1')]      = document.getElementById('tab1Input').value.trim();
+  saved[kk('tab2')]      = document.getElementById('tab2Input').value.trim();
+  saved[kk('key')]       = document.getElementById('keyInput').value.trim();
+  saved[kk('tempo')]     = document.getElementById('tempoInput').value.trim();
+  saved[kk('artist')]    = document.getElementById('artistInput').value.trim();
+  saved[kk('known')]     = document.getElementById('knownCheck').checked;
+  saved[kk('structure')] = document.getElementById('structureInput').value.trim();
+  saved[kk('tricky')]    = document.getElementById('trickyInput').value.trim();
+  saved[kk('notes')]     = document.getElementById('notesInput').value.trim();
+  saved[kk('perfs')]     = JSON.stringify(perfs);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+  const f = document.getElementById('saveFlash');
+  f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 1800);
+}
+
+// ─── Initialize ───────────────────────────────────────────────────────────────
+function init() {
+  if (!song) {
+    document.getElementById('heroTitle').textContent = 'Song not found';
+    return;
+  }
+  const saved = loadData();
+
+  // Hero
+  document.title = song.title + ' — Setlist';
+  document.getElementById('topbarTitle').textContent = song.title;
+  document.getElementById('heroTitle').textContent = song.title;
+  document.getElementById('heroArtist').textContent = saved[kk('artist')] || song.artist || '';
+  const meta = document.getElementById('heroMeta');
+  meta.innerHTML = `<span class="meta-chip chip-set">📋 ${song.set}</span>`;
+  if (saved[kk('known')] === true || saved[kk('known')] === 'true') {
+    meta.innerHTML += `<span class="meta-chip chip-known">✓ Know It Well</span>`;
+  }
+  if (saved[kk('key')]) {
+    meta.innerHTML += `<span class="meta-chip chip-key">Key: ${saved[kk('key')]}</span>`;
+  }
+
+  // Populate fields
+  const ytUrl = saved[kk('yt')] || song.yt || '';
+  document.getElementById('ytInput').value = ytUrl;
+  if (ytUrl) loadYT();
+
+  const ssUrl = saved[kk('ss')] || '';
+  document.getElementById('ssInput').value = ssUrl;
+  if (ssUrl) loadSS();
+
+  const ugUrl = saved[kk('ug')] || '';
+  document.getElementById('ugInput').value = ugUrl;
+
+  document.getElementById('ssTabInput').value = ssUrl;
+  document.getElementById('tab1Input').value = saved[kk('tab1')] || '';
+  document.getElementById('tab2Input').value = saved[kk('tab2')] || '';
+  document.getElementById('keyInput').value = saved[kk('key')] || '';
+  document.getElementById('tempoInput').value = saved[kk('tempo')] || '';
+  document.getElementById('artistInput').value = saved[kk('artist')] || song.artist || '';
+  document.getElementById('knownCheck').checked = saved[kk('known')] === true || saved[kk('known')] === 'true';
+  document.getElementById('structureInput').value = saved[kk('structure')] || '';
+  document.getElementById('trickyInput').value = saved[kk('tricky')] || '';
+  document.getElementById('notesInput').value = saved[kk('notes')] || '';
+
+  // Perfs
+  try { perfs = JSON.parse(saved[kk('perfs')] || '[]'); } catch { perfs = []; }
+  renderPerfs();
+
+  // Wire link buttons
+  wireLink(document.getElementById('ugInput'), document.getElementById('ugGo'));
+  wireLink(document.getElementById('ssTabInput'), document.getElementById('ssTabGo'));
+  wireLink(document.getElementById('tab1Input'), document.getElementById('tab1Go'));
+  wireLink(document.getElementById('tab2Input'), document.getElementById('tab2Go'));
+
+  // Auto-save on any input
+  document.querySelectorAll('input:not([type=checkbox]):not([type=button]), textarea').forEach(el => {
+    el.addEventListener('change', saveAll);
+  });
+  document.getElementById('knownCheck').addEventListener('change', saveAll);
+}
+
+init();
+</script>
+</body>
+</html>

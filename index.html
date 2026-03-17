@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Band Setlist Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
+    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
+    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
+  }
+  body {
+    background-color: var(--cream);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    color: var(--ink); min-height: 100vh; padding: 40px 20px 80px;
+  }
+  header { text-align: center; margin-bottom: 50px; }
+  header::before, header::after {
+    content: ''; display: block; height: 2px;
+    background: linear-gradient(to right, transparent, var(--rust), var(--tan), var(--rust), transparent);
+    margin: 12px auto; width: 80%; max-width: 600px;
+  }
+  h1 { font-family: 'Special Elite', cursive; font-size: clamp(2rem,5vw,3.4rem); color: var(--brown); letter-spacing: 0.04em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+  .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); font-size: 1rem; margin-top: 6px; letter-spacing: 0.06em; }
+  .ornament { text-align: center; color: var(--tan); font-size: 1.2rem; margin: 0 0 8px; letter-spacing: 0.3em; }
+  .sets-container { display: flex; flex-direction: column; gap: 48px; max-width: 1120px; margin: 0 auto; }
+
+  .set-card {
+    background: var(--parchment); border: 1px solid var(--tan); border-radius: 2px;
+    box-shadow: 3px 4px 18px rgba(74,46,26,0.13), inset 0 0 60px rgba(255,255,255,0.25);
+    overflow: hidden; position: relative;
+  }
+  .set-card::before {
+    content: ''; position: absolute; left: 46px; top: 0; bottom: 0;
+    width: 1px; background: rgba(139,58,26,0.18); pointer-events: none; z-index: 0;
+  }
+  .set-header {
+    background: var(--brown); padding: 14px 20px 14px 54px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .set-number { font-family: 'Special Elite', cursive; color: var(--tan); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.8; }
+  .set-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--cream); font-weight: 700; }
+  .legend { margin-left: auto; font-family: 'Special Elite', cursive; font-size: 0.62rem; color: var(--tan); letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px; }
+  .legend-check { width: 13px; height: 13px; background: var(--green); border-radius: 2px; display:inline-flex; align-items:center; justify-content:center; color:white; font-size:9px; }
+  .set-count { font-family: 'Special Elite', cursive; color: var(--tan); font-size: 0.8rem; opacity: 0.7; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { border-bottom: 2px solid var(--line); }
+  thead th {
+    font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--faded); padding: 9px 7px 7px;
+    text-align: left; background: rgba(200,169,122,0.15);
+  }
+  thead th.col-check { width: 36px; text-align: center; padding-left: 12px; }
+  thead th.col-num { width: 26px; text-align: center; }
+  thead th.col-song { min-width: 150px; }
+  thead th.col-artist { min-width: 120px; }
+  thead th.col-key { width: 60px; text-align: center; }
+  thead th.col-yt { width: 155px; }
+  thead th.col-ug { width: 145px; }
+  thead th.col-detail { width: 60px; text-align: center; }
+
+  tbody tr { border-bottom: 1px solid rgba(196,176,138,0.4); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.3); }
+  tbody tr.known { background: rgba(58,107,58,0.06); }
+  tbody tr.known .song-name { text-decoration: line-through; color: var(--faded); opacity: 0.6; }
+
+  td { padding: 9px 7px; vertical-align: middle; font-size: 0.87rem; }
+  .check-cell { text-align: center; padding-left: 12px; }
+  .know-check {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; border: 2px solid var(--tan); border-radius: 3px;
+    cursor: pointer; position: relative; background: rgba(255,255,255,0.5);
+    transition: background 0.15s, border-color 0.15s; vertical-align: middle;
+  }
+  .know-check:checked { background: var(--green); border-color: var(--green); }
+  .know-check:checked::after { content: '✓'; position: absolute; top: -2px; left: 2px; color: white; font-size: 13px; font-weight: bold; }
+
+  .row-num { font-family: 'Special Elite', cursive; color: var(--faded); font-size: 0.7rem; display: block; text-align: center; }
+  .song-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.9rem; }
+  .artist-name { font-size: 0.8rem; color: var(--faded); font-style: italic; }
+
+  .key-badge {
+    display: inline-block; font-family: 'Special Elite', cursive;
+    font-size: 0.75rem; color: var(--rust); background: rgba(139,58,26,0.1);
+    border: 1px solid rgba(139,58,26,0.25); border-radius: 3px;
+    padding: 1px 6px; text-align: center; min-width: 28px;
+  }
+
+  .link-cell { display: flex; align-items: center; gap: 4px; }
+  .link-input {
+    flex: 1; background: rgba(255,255,255,0.55); border: 1px solid var(--line);
+    border-radius: 3px; padding: 5px 6px; font-family: 'Libre Baskerville', serif;
+    font-size: 0.68rem; color: var(--ink); outline: none;
+    transition: border-color 0.2s, background 0.2s; min-width: 0;
+  }
+  .link-input:focus { border-color: var(--rust); background: #fff; }
+  .link-input::placeholder { color: var(--tan); font-style: italic; }
+  .go-btn {
+    flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    width: 23px; height: 23px; background: var(--rust); border: none; border-radius: 3px;
+    cursor: pointer; color: var(--cream); text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .go-btn:hover { background: var(--brown); transform: scale(1.1); }
+  .go-btn.disabled { background: var(--line); pointer-events: none; }
+  .go-btn svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .detail-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 28px; background: var(--brown); color: var(--cream);
+    border-radius: 3px; text-decoration: none; font-size: 14px;
+    transition: background 0.15s, transform 0.1s;
+    cursor: pointer; border: none;
+  }
+  .detail-btn:hover { background: var(--rust); transform: scale(1.05); }
+
+  .save-bar { text-align: center; margin-top: 48px; }
+  .save-btn {
+    font-family: 'Special Elite', cursive; letter-spacing: 0.12em; font-size: 0.85rem;
+    padding: 12px 36px; background: var(--brown); color: var(--cream);
+    border: none; border-radius: 2px; cursor: pointer; text-transform: uppercase;
+    box-shadow: 2px 3px 10px rgba(74,46,26,0.25); transition: background 0.15s;
+  }
+  .save-btn:hover { background: var(--rust); }
+  .saved-msg { font-family: 'Playfair Display', serif; font-style: italic; color: var(--rust); font-size: 0.85rem; margin-top: 10px; opacity: 0; transition: opacity 0.4s; }
+  .saved-msg.show { opacity: 1; }
+  .hint { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); font-size: 0.74rem; text-align: center; margin-top: 10px; }
+
+  @media (max-width: 760px) { thead th.col-ug, .col-ug-cell { display: none; } }
+  @media (max-width: 560px) { thead th.col-artist, .col-artist-cell { display: none; } thead th.col-key, .col-key-cell { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="ornament">✦ ✦ ✦</div>
+  <h1>The Setlist Book</h1>
+  <p class="subtitle">Songs · Artists · Links · Tabs</p>
+</header>
+<div class="sets-container" id="setsContainer"></div>
+<div class="save-bar">
+  <button class="save-btn" onclick="saveAll()">💾  Save Everything</button>
+  <div class="saved-msg" id="savedMsg">All changes saved ✓</div>
+  <div class="hint">✦ Click 📖 to open a song's full detail page &nbsp;·&nbsp; ✓ = know it well</div>
+</div>
+<script>
+const YT = 'https://www.youtube.com/watch?v=';
+const STORAGE_KEY = 'bandsetlist_v3';
+
+const SETS = [
+  { title: "Set One", songs: [
+    { id:'s0i0', title:"Lonesome Me",                    artist:"Neil Young",        yt:YT+'EsA5tLr4_Pw' },
+    { id:'s0i1', title:"Downhill",                       artist:"Sister Hazel",      yt:'' },
+    { id:'s0i2', title:"Fireman",                        artist:"George Strait",     yt:YT+'PGdWmexwJok' },
+    { id:'s0i3', title:"Dead Flowers",                   artist:"Rolling Stones",    yt:YT+'V3RLjuLWjUk' },
+    { id:'s0i4', title:"Give Me a Ride",                 artist:"",                  yt:'' },
+    { id:'s0i5', title:"Till I Hear It From You",        artist:"Gin Blossoms",      yt:YT+'o7sx32alzeE' },
+    { id:'s0i6', title:"Can't Wait Anymore",             artist:"Sister Hazel",      yt:'' },
+    { id:'s0i7', title:"Blame It on Your Heart",         artist:"Patty Loveless",    yt:YT+'qFf9E1B3RFM' },
+    { id:'s0i8', title:"Turn It On",                     artist:"",                  yt:'' },
+    { id:'s0i9', title:"Cryin, Waitin",                  artist:"Buddy Holly",       yt:YT+'qrUfGaGT8VQ' },
+    { id:'s0i10',title:"To Be Real",                     artist:"",                  yt:'' },
+    { id:'s0i11',title:"Jefferson Street",               artist:"",                  yt:'' },
+    { id:'s0i12',title:"Thick of It",                    artist:"",                  yt:'' },
+    { id:'s0i13',title:"Anyplace",                       artist:"",                  yt:'' },
+    { id:'s0i14',title:"All You Ever Do Is Bring Me Down",artist:"The Mavericks",   yt:YT+'pHJb4DXSEGk' },
+  ]},
+  { title: "Set Two", songs: [
+    { id:'s1i0', title:"Timber",                         artist:"",                  yt:'' },
+    { id:'s1i1', title:"Let Her Dance",                  artist:"Bobby Fuller Four", yt:YT+'XJuEHB6S3Jk' },
+    { id:'s1i2', title:"All Once in Here",               artist:"",                  yt:'' },
+    { id:'s1i3', title:"Pretty Wanted",                  artist:"",                  yt:'' },
+    { id:'s1i4', title:"Tempted",                        artist:"Squeeze",           yt:YT+'_gMpmtJ3V_g' },
+    { id:'s1i5', title:"Georgia on a Fast Train",        artist:"Billy Joe Shaver",  yt:YT+'RJLq7gvEE_Q' },
+    { id:'s1i6', title:"Home of the Blues",              artist:"Johnny Cash",       yt:YT+'u6RzHCNwWVg' },
+    { id:'s1i7', title:"Hello Mary Lou",                 artist:"Ricky Nelson",      yt:YT+'hWi3nGHeTHk' },
+    { id:'s1i8', title:"Wanna Believe",                  artist:"",                  yt:'' },
+    { id:'s1i9', title:"Mama Tried",                     artist:"Merle Haggard",     yt:YT+'LSoDyG6kGOA' },
+    { id:'s1i10',title:"Honky Tonk Women",               artist:"Rolling Stones",    yt:YT+'oHpSdGUe5wE' },
+    { id:'s1i11',title:"Ain't That Lonely Yet",          artist:"Dwight Yoakam",     yt:YT+'ikEL0PJRbdk' },
+    { id:'s1i12',title:"Freeborn",                       artist:"",                  yt:'' },
+    { id:'s1i13',title:"Don't Look Back in Anger",       artist:"Oasis",             yt:YT+'cmpVEMbKGAM' },
+    { id:'s1i14',title:"You Don't Know How It Feels",    artist:"Tom Petty",         yt:YT+'MBgSfT6cqXI' },
+    { id:'s1i15',title:"Not Dead Anymore",               artist:"",                  yt:'' },
+  ]},
+  { title: "Set Three", songs: [
+    { id:'s2i0', title:"Who Were You Thinking Of",       artist:"Texas Tornados",    yt:YT+'wQ6FJCiKaeQ' },
+    { id:'s2i1', title:"Guitars Cadillacs",              artist:"Dwight Yoakam",     yt:YT+'hT2sdgBtAW8' },
+    { id:'s2i2', title:"Give Me a Ride",                 artist:"",                  yt:'' },
+    { id:'s2i3', title:"Blame It on Your Heart",         artist:"Patty Loveless",    yt:YT+'qFf9E1B3RFM' },
+    { id:'s2i4', title:"To Be Real",                     artist:"",                  yt:'' },
+    { id:'s2i5', title:"Till I Hear It From You",        artist:"Gin Blossoms",      yt:YT+'o7sx32alzeE' },
+    { id:'s2i6', title:"Downhill",                       artist:"Sister Hazel",      yt:'' },
+    { id:'s2i7', title:"Don't Change",                   artist:"INXS",              yt:YT+'4LmHMZeS4pM' },
+    { id:'s2i8', title:"Dance the Night Away",           artist:"The Mavericks",     yt:YT+'A9L8hQHkAiE' },
+    { id:'s2i9', title:"Can't Wait Anymore",             artist:"Sister Hazel",      yt:'' },
+    { id:'s2i10',title:"Rainy Day Woman",                artist:"",                  yt:'' },
+    { id:'s2i11',title:"Anyplace",                       artist:"",                  yt:'' },
+    { id:'s2i12',title:"Dead Flowers",                   artist:"Rolling Stones",    yt:YT+'V3RLjuLWjUk' },
+    { id:'s2i13',title:"Lonesome Me",                    artist:"Neil Young",        yt:YT+'EsA5tLr4_Pw' },
+  ]}
+];
+
+// Expose sets globally for song.html to reference
+window.SETS = SETS;
+
+function loadData() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+
+function saveAll() {
+  const data = {};
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const val = el.type === 'checkbox' ? el.checked : el.value.trim();
+    if (val !== false && val !== '') data[el.dataset.key] = val;
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const msg = document.getElementById('savedMsg');
+  msg.classList.add('show'); setTimeout(() => msg.classList.remove('show'), 2500);
+}
+
+function updateGoBtn(input) {
+  const btn = input.parentElement.querySelector('.go-btn');
+  if (!btn) return;
+  const val = input.value.trim();
+  if (val) { btn.classList.remove('disabled'); btn.href = val.startsWith('http') ? val : 'https://' + val; btn.target = '_blank'; }
+  else { btn.classList.add('disabled'); btn.removeAttribute('href'); btn.removeAttribute('target'); }
+}
+
+function render() {
+  const saved = loadData();
+  const container = document.getElementById('setsContainer');
+  SETS.forEach((set, si) => {
+    const card = document.createElement('div');
+    card.className = 'set-card';
+    card.innerHTML = `
+      <div class="set-header">
+        <span class="set-number">Set ${si + 1}</span>
+        <span class="set-title">${set.title}</span>
+        <div class="legend"><span class="legend-check">✓</span> = know it well</div>
+        <span class="set-count">${set.songs.length} songs</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th class="col-check">✓</th>
+          <th class="col-num">#</th>
+          <th class="col-song">Song</th>
+          <th class="col-artist">Artist</th>
+          <th class="col-key">Key</th>
+          <th class="col-yt">▶ YouTube</th>
+          <th class="col-ug">🎸 Ult. Guitar</th>
+          <th class="col-detail">📖</th>
+        </tr></thead>
+        <tbody id="tbody_${si}"></tbody>
+      </table>`;
+    container.appendChild(card);
+    const tbody = card.querySelector(`#tbody_${si}`);
+    set.songs.forEach((song, i) => {
+      const kk = (t) => `${song.id}_${t}`;
+      const isKnown = saved[kk('known')] === true || saved[kk('known')] === 'true';
+      const artistVal = kk('artist') in saved ? saved[kk('artist')] : (song.artist || '');
+      const ytVal = kk('yt') in saved ? saved[kk('yt')] : (song.yt || '');
+      const ugVal = saved[kk('ug')] || '';
+      const keyVal = saved[kk('key')] || '';
+      const esc = s => s.replace(/"/g, '&quot;');
+
+      const tr = document.createElement('tr');
+      if (isKnown) tr.classList.add('known');
+      tr.innerHTML = `
+        <td class="check-cell"><input type="checkbox" class="know-check" data-key="${kk('known')}" ${isKnown ? 'checked' : ''}></td>
+        <td><span class="row-num">${i + 1}</span></td>
+        <td><span class="song-name">${song.title}</span></td>
+        <td class="col-artist-cell"><span class="artist-name">${artistVal}</span></td>
+        <td class="col-key-cell" style="text-align:center">
+          <input class="link-input key-input" type="text" maxlength="4" placeholder="–" data-key="${kk('key')}" value="${esc(keyVal)}" style="width:46px;text-align:center;font-family:'Special Elite',cursive;font-size:0.8rem;">
+        </td>
+        <td>
+          <div class="link-cell">
+            <input class="link-input" type="url" placeholder="YouTube URL…" data-key="${kk('yt')}" value="${esc(ytVal)}">
+            <a class="go-btn ${ytVal ? '' : 'disabled'}" ${ytVal ? `href="${esc(ytVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+          </div>
+        </td>
+        <td class="col-ug-cell">
+          <div class="link-cell">
+            <input class="link-input" type="url" placeholder="UG URL…" data-key="${kk('ug')}" value="${esc(ugVal)}">
+            <a class="go-btn ${ugVal ? '' : 'disabled'}" ${ugVal ? `href="${esc(ugVal)}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
+          </div>
+        </td>
+        <td style="text-align:center">
+          <a class="detail-btn" href="song.html?id=${song.id}" title="Open song detail">📖</a>
+        </td>`;
+      tbody.appendChild(tr);
+      const cb = tr.querySelector('.know-check');
+      cb.addEventListener('change', () => { if (cb.checked) tr.classList.add('known'); else tr.classList.remove('known'); saveAll(); });
+      tr.querySelectorAll('.link-input').forEach(inp => {
+        inp.addEventListener('input', () => updateGoBtn(inp));
+        inp.addEventListener('change', saveAll);
+      });
+    });
+  });
+}
+
+render();
+</script>
+</body>
+</html>
