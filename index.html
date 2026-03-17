@@ -404,7 +404,7 @@
 // ── Firebase Setup ────────────────────────────────────────────────────────────
 // Uses Firebase v10 loaded from Google's CDN — no npm or build step needed.
 import { initializeApp }                      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { firebaseConfig }                     from './firebase-config.js';
 
 const app      = initializeApp(firebaseConfig);
@@ -480,9 +480,18 @@ let bandNameStr = '';  // band name
 
 // ── Cloud helpers ─────────────────────────────────────────────────────────────
 async function saveToCloud(update) {
-  // update is a partial object — merge: true leaves unrelated fields alone
   try {
-    await setDoc(DATA_DOC, update, { merge: true });
+    // updateDoc replaces each top-level field entirely (no deep merge), so false booleans
+    // are stored correctly. Falls back to setDoc if the document doesn't exist yet.
+    try {
+      await updateDoc(DATA_DOC, update);
+    } catch (e) {
+      if (e.code === 'not-found') {
+        await setDoc(DATA_DOC, update);
+      } else {
+        throw e;
+      }
+    }
   } catch (e) {
     console.warn('Firebase save failed — using localStorage as fallback:', e.message);
     if (update.setlistData !== undefined) localStorage.setItem(STORAGE_KEY, JSON.stringify(update.setlistData));
