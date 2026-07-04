@@ -66,6 +66,13 @@
   .picker-new input { flex: 1 1 120px; min-width: 0; background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; }
   .picker-new input:focus { border-color: var(--rust); background: #fff; }
   .picker-new-hint { padding: 6px 12px 10px; font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.72rem; color: var(--faded); }
+  .new-suggest { display: none; border-top: 1px solid var(--line); max-height: 240px; overflow-y: auto; }
+  .new-suggest.show { display: block; }
+  .ns-item { display: flex; flex-direction: column; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(196,176,138,0.4); }
+  .ns-item:last-child { border-bottom: none; }
+  .ns-item:hover { background: rgba(200,169,122,0.22); }
+  .ns-item .ns-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.84rem; }
+  .ns-item .ns-artist { font-size: 0.72rem; color: var(--faded); font-style: italic; }
 
   /* Sets */
   .set-block { background: var(--parchment); border: 1px solid var(--tan); border-radius: 4px; margin-bottom: 20px; overflow: hidden; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
@@ -217,11 +224,12 @@
       <div class="picker-list" id="pickList"></div>
       <div class="picker-new">
         <span class="picker-label">New</span>
-        <input type="text" id="newSongTitle" placeholder="Song not in the list? Title…" autocomplete="off">
+        <input type="text" id="newSongTitle" placeholder="Song not in the list? Type a title to search…" autocomplete="off">
         <input type="text" id="newSongArtist" placeholder="Artist (optional)" autocomplete="off">
         <button class="btn sm" id="newSongAdd">＋ Add new</button>
       </div>
-      <div class="picker-new-hint">Adds it to this setlist, the band's Song List, and your personal Library.</div>
+      <div class="new-suggest" id="newSuggest"></div>
+      <div class="picker-new-hint">Pick a suggestion or press “Add new”. Adds it to this setlist, the band's Song List, and your personal Library.</div>
     </div>
   </div>
 
@@ -480,14 +488,48 @@ async function ensureLibrary() {
 const sameSong = (a, b) => (a.title || '').toLowerCase() === (b.title || '').toLowerCase()
   && (a.artist || '').toLowerCase() === (b.artist || '').toLowerCase();
 
-$('newSongAdd').addEventListener('click', addNewSong);
-$('newSongTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('newSongArtist').focus(); });
+$('newSongAdd').addEventListener('click', () => addNewSong());
+$('newSongTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('newSongArtist').focus(); if (e.key === 'Escape') hideNewSuggest(); });
 $('newSongArtist').addEventListener('keydown', e => { if (e.key === 'Enter') addNewSong(); });
 
-async function addNewSong() {
-  const title = $('newSongTitle').value.trim();
+// iTunes autocomplete for the new-song title (same as the Library's search)
+let newSearchTimer = null, newSuggestions = [];
+$('newSongTitle').addEventListener('input', () => {
+  const term = $('newSongTitle').value.trim();
+  clearTimeout(newSearchTimer);
+  if (term.length < 2) { hideNewSuggest(); return; }
+  newSearchTimer = setTimeout(() => runNewSearch(term), 280);
+});
+document.addEventListener('click', e => {
+  if (e.target !== $('newSongTitle') && !$('newSuggest').contains(e.target)) hideNewSuggest();
+});
+async function runNewSearch(term) {
+  try {
+    const res = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=6&term=' + encodeURIComponent(term));
+    if ($('newSongTitle').value.trim() !== term) return; // stale
+    const data = await res.json();
+    newSuggestions = (data.results || []).map(r => ({ title: r.trackName, artist: r.artistName }));
+    showNewSuggest();
+  } catch { hideNewSuggest(); }  // API blocked → just use manual entry
+}
+function showNewSuggest() {
+  const box = $('newSuggest');
+  box.innerHTML = '';
+  newSuggestions.forEach(sg => {
+    const it = document.createElement('div');
+    it.className = 'ns-item';
+    it.innerHTML = `<span class="ns-title">${esc(sg.title)}</span><span class="ns-artist">${esc(sg.artist)}</span>`;
+    it.addEventListener('click', () => { hideNewSuggest(); addNewSong(sg.title, sg.artist); });
+    box.appendChild(it);
+  });
+  box.classList.toggle('show', newSuggestions.length > 0);
+}
+function hideNewSuggest() { $('newSuggest').classList.remove('show'); $('newSuggest').innerHTML = ''; }
+
+async function addNewSong(titleArg, artistArg) {
+  const title = (titleArg != null ? titleArg : $('newSongTitle').value).trim();
   if (!title) { toast('Enter a song title'); $('newSongTitle').focus(); return; }
-  const artist = $('newSongArtist').value.trim();
+  const artist = (artistArg != null ? artistArg : $('newSongArtist').value).trim();
   const target = parseInt($('targetSet').value) || 0;
   const btn = $('newSongAdd'); btn.disabled = true;
   try {
@@ -517,6 +559,7 @@ async function addNewSong() {
     setlist.sets[target].songIds.push(repId);
     saveSets(); render();
     $('newSongTitle').value = ''; $('newSongArtist').value = '';
+    hideNewSuggest();
     $('newSongTitle').focus();
     toast('Added to setlist, Song List & your Library');
   } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
