@@ -86,7 +86,7 @@
   header.page-head .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); margin-top: 5px; }
 
   /* ── Add / search bar ── */
-  .add-bar { position: relative; max-width: 620px; margin: 0 auto 34px; }
+  .add-bar { position: relative; max-width: 620px; margin: 0 auto 14px; }
   .add-bar-input-row { display: flex; gap: 8px; }
   .add-bar input {
     flex: 1; background: var(--parchment); border: 1px solid var(--tan);
@@ -95,6 +95,52 @@
   }
   .add-bar input:focus { border-color: var(--rust); background: #fff; }
   .add-bar input::placeholder { color: var(--tan); font-style: italic; }
+
+  /* ── Filter bar ── */
+  .filter-bar { position: relative; max-width: 620px; margin: 0 auto 32px; }
+  .filter-bar input {
+    width: 100%; background: rgba(255,255,255,0.55); border: 1px solid var(--line);
+    border-radius: 4px; padding: 10px 34px 10px 14px; font-family: 'Libre Baskerville', serif;
+    font-size: 0.85rem; color: var(--ink); outline: none;
+  }
+  .filter-bar input:focus { border-color: var(--rust); background: #fff; }
+  .filter-bar input::placeholder { color: var(--tan); font-style: italic; }
+  .filter-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--faded); cursor: pointer; font-size: 14px; padding: 4px 6px;
+  }
+  .filter-clear:hover { color: var(--rust); }
+
+  /* ── Inline edit ── */
+  .song-item { display: flex; flex-direction: column; }
+  .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
+  .icon-btn.edit:hover, .icon-btn.edit.on { background: var(--brown); color: var(--cream); }
+  .lnk.search { opacity: 0.42; }
+  .btn.sm { padding: 5px 11px; font-size: 0.68rem; }
+  .song-item.editing .song-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .song-edit {
+    display: none; background: rgba(74,46,26,0.05); border: 1px solid var(--line);
+    border-top: none; border-radius: 0 0 3px 3px; padding: 13px;
+  }
+  .song-edit.show { display: block; }
+  .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .edit-grid label {
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--faded);
+  }
+  .edit-grid label.wide { grid-column: 1 / -1; }
+  .edit-grid .lbl-hint { text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.7; font-family: 'Playfair Display', serif; }
+  .edit-grid input {
+    background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px;
+    padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink);
+    outline: none; text-transform: none; letter-spacing: normal;
+  }
+  .edit-grid input:focus { border-color: var(--rust); background: #fff; }
+  .edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 11px; }
+  .edit-saved { font-family: 'Special Elite', cursive; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+  .edit-saved.show { opacity: 1; }
+  @media (max-width: 620px) { .edit-grid { grid-template-columns: 1fr; } }
   .suggest-box {
     position: absolute; left: 0; right: 0; top: calc(100% + 4px);
     background: var(--cream); border: 1px solid var(--tan); border-radius: 4px;
@@ -234,6 +280,12 @@
     <div class="suggest-box" id="suggestBox"></div>
   </div>
 
+  <!-- Filter existing library -->
+  <div class="filter-bar">
+    <input type="text" id="libFilter" placeholder="🔍 Filter your library — find a song fast…" autocomplete="off">
+    <button class="filter-clear" id="libFilterClear" title="Clear" style="display:none">✕</button>
+  </div>
+
   <!-- Learning -->
   <div class="lib-section">
     <div class="section-head">
@@ -269,6 +321,8 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, d
 let currentUser = null;
 let songsUnsub  = null;
 let songsCache  = [];
+let editingId   = null;   // row currently open for inline editing (suppresses re-render)
+let filterTerm  = '';     // library filter text
 
 // ── Utilities ──
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -322,16 +376,20 @@ onAuthStateChanged(auth, user => {
     songsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     loading.style.display = 'none';
     appWrap.style.display = 'block';
-    renderLibrary();
+    if (!editingId) renderLibrary();   // don't clobber an open inline editor
   }, err => {
     loading.textContent = 'Could not load your library: ' + err.message;
   });
 });
 
 // ── Render ──
+function libMatch(s) {
+  const q = filterTerm.trim().toLowerCase();
+  return !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
+}
 function renderLibrary() {
-  const learning = songsCache.filter(s => s.status !== 'learned');
-  const learned  = songsCache.filter(s => s.status === 'learned');
+  const learning = songsCache.filter(s => s.status !== 'learned' && libMatch(s));
+  const learned  = songsCache.filter(s => s.status === 'learned' && libMatch(s));
   renderSection('learningList', 'learningCount', learning, true);
   renderSection('learnedList', 'learnedCount', learned, false);
 }
@@ -344,7 +402,10 @@ function renderSection(listId, countId, songs, isLearning) {
   if (!songs.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    if (isLearning && songsCache.length === 0) {
+    const filtering = filterTerm.trim().length > 0;
+    if (filtering) {
+      empty.innerHTML = `<p>No ${isLearning ? 'practice' : 'known'} songs match “${esc(filterTerm.trim())}”.</p>`;
+    } else if (isLearning && songsCache.length === 0) {
       empty.innerHTML = `<div class="big">🎸</div><p>Your library is empty. Search for a song above to start —<br>or bring in the classic 44-song book.</p>
         <button class="btn" id="importBtn">Import 44 starter songs</button>`;
     } else {
@@ -362,25 +423,40 @@ function renderSection(listId, countId, songs, isLearning) {
 }
 
 function songRow(s) {
-  const row = document.createElement('div');
-  row.className = 'song-row' + (s.status === 'learned' ? ' done' : '');
-  row.innerHTML = `
-    <button class="learn-toggle ${s.status === 'learned' ? 'done' : ''}" title="Mark as ${s.status === 'learned' ? 'still learning' : 'known'}">${s.status === 'learned' ? '✓' : ''}</button>
-    <div class="song-main">
-      <div class="song-title">${esc(s.title)}</div>
-      <div class="song-artist">${esc(s.artist || '—')}</div>
+  const editing = editingId === s.id;
+  const item = document.createElement('div');
+  item.className = 'song-item' + (editing ? ' editing' : '');
+  item.innerHTML = `
+    <div class="song-row${s.status === 'learned' ? ' done' : ''}">
+      <button class="learn-toggle ${s.status === 'learned' ? 'done' : ''}" title="Mark as ${s.status === 'learned' ? 'still learning' : 'known'}">${s.status === 'learned' ? '✓' : ''}</button>
+      <div class="song-main">
+        <div class="song-title">${esc(s.title)}</div>
+        <div class="song-artist">${esc(s.artist || '—')}</div>
+      </div>
+      <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
+      <div class="link-icons">
+        <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
+        <a class="lnk sp ${s.spotify ? '' : 'search'}" href="${esc(spLink(s))}" target="_blank" title="${s.spotify ? 'Open saved Spotify' : 'Search Spotify'}">♫</a>
+        <a class="lnk ap ${s.apple ? '' : 'search'}" href="${esc(apLink(s))}" target="_blank" title="${s.apple ? 'Open saved Apple Music' : 'Search Apple Music'}"></a>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn edit${editing ? ' on' : ''}" title="Quick edit">✏️</button>
+        <a class="icon-btn detail" href="song.html?id=${encodeURIComponent(s.id)}" title="Open detail / notes">📖</a>
+        <button class="icon-btn del" title="Remove">✕</button>
+      </div>
     </div>
-    <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
-    <div class="link-icons">
-      <a class="lnk yt" href="${esc(ytLink(s))}" target="_blank" title="YouTube">▶</a>
-      <a class="lnk sp" href="${esc(spLink(s))}" target="_blank" title="Spotify">♫</a>
-      <a class="lnk ap" href="${esc(apLink(s))}" target="_blank" title="Apple Music"></a>
-    </div>
-    <div class="row-actions">
-      <a class="icon-btn detail" href="song.html?id=${encodeURIComponent(s.id)}" title="Open detail / notes">📖</a>
-      <button class="icon-btn del" title="Remove">✕</button>
+    <div class="song-edit${editing ? ' show' : ''}">
+      <div class="edit-grid">
+        <label>Title<input data-f="title" value="${esc(s.title || '')}"></label>
+        <label>Artist<input data-f="artist" value="${esc(s.artist || '')}"></label>
+        <label class="wide">YouTube URL <span class="lbl-hint">— paste one to lock in a specific video</span><input data-f="youtube" placeholder="https://youtube.com/watch?v=…" value="${esc(s.youtube || '')}"></label>
+        <label>Spotify URL<input data-f="spotify" placeholder="Optional" value="${esc(s.spotify || '')}"></label>
+        <label>Apple Music URL<input data-f="apple" placeholder="Optional" value="${esc(s.apple || '')}"></label>
+      </div>
+      <div class="edit-actions"><span class="edit-saved">Saved ✓</span><button class="btn sm edit-done">Done</button></div>
     </div>`;
 
+  const row = item.querySelector('.song-row');
   row.querySelector('.learn-toggle').addEventListener('click', () =>
     updateDoc(songDoc(s.id), { status: s.status === 'learned' ? 'learning' : 'learned', updatedAt: serverTimestamp() }));
 
@@ -392,7 +468,48 @@ function songRow(s) {
     if (confirm(`Remove "${s.title}" from your library?`)) deleteDoc(songDoc(s.id));
   });
 
-  return row;
+  row.querySelector('.edit').addEventListener('click', () => {
+    editingId = (editingId === s.id) ? null : s.id;
+    renderLibrary();
+    if (editingId === s.id) {
+      const inp = document.querySelector('.song-item.editing .song-edit input[data-f="title"]');
+      if (inp) inp.focus();
+    }
+  });
+
+  // Inline edit wiring
+  const editPanel = item.querySelector('.song-edit');
+  const savedNote = editPanel.querySelector('.edit-saved');
+  function flashSaved() { savedNote.classList.add('show'); setTimeout(() => savedNote.classList.remove('show'), 1400); }
+  function normUrl(v) { v = v.trim(); return v && !/^https?:\/\//i.test(v) ? 'https://' + v : v; }
+
+  editPanel.querySelectorAll('input[data-f]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const f = inp.dataset.f;
+      let val = inp.value.trim();
+      if (f === 'youtube' || f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+      try {
+        await updateDoc(songDoc(s.id), { [f]: val, updatedAt: serverTimestamp() });
+        s[f] = val;  // keep local copy fresh for live href updates
+        if (f === 'title') row.querySelector('.song-title').textContent = val || '(untitled)';
+        if (f === 'artist') row.querySelector('.song-artist').textContent = val || '—';
+        if (f === 'youtube') refreshLnk(row.querySelector('.lnk.yt'), val, ytLink(s), 'video', 'YouTube');
+        if (f === 'spotify') refreshLnk(row.querySelector('.lnk.sp'), val, spLink(s), 'Spotify', 'Spotify');
+        if (f === 'apple')   refreshLnk(row.querySelector('.lnk.ap'), val, apLink(s), 'Apple Music', 'Apple Music');
+        flashSaved();
+      } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
+    });
+  });
+  editPanel.querySelector('.edit-done').addEventListener('click', () => { editingId = null; renderLibrary(); });
+
+  return item;
+}
+
+function refreshLnk(el, savedVal, computedHref, savedNoun, searchNoun) {
+  if (!el) return;
+  el.href = computedHref;
+  if (savedVal) { el.classList.remove('search'); el.title = 'Open saved ' + savedNoun; }
+  else { el.classList.add('search'); el.title = 'Search ' + searchNoun; }
 }
 
 // ── Add song (+ iTunes autocomplete) ──
@@ -420,6 +537,19 @@ searchInput.addEventListener('keydown', e => {
 
 document.addEventListener('click', e => {
   if (!suggestBox.contains(e.target) && e.target !== searchInput) hideSuggest();
+});
+
+// ── Filter existing library ──
+const libFilter = document.getElementById('libFilter');
+const libFilterClear = document.getElementById('libFilterClear');
+libFilter.addEventListener('input', () => {
+  filterTerm = libFilter.value;
+  libFilterClear.style.display = filterTerm ? '' : 'none';
+  if (!editingId) renderLibrary();
+});
+libFilterClear.addEventListener('click', () => {
+  libFilter.value = ''; filterTerm = ''; libFilterClear.style.display = 'none';
+  renderLibrary(); libFilter.focus();
 });
 
 async function runSearch(term) {

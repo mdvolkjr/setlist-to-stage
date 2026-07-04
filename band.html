@@ -115,6 +115,27 @@
   .icon-btn { width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
   .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
   .icon-btn.del:hover { background: var(--rust); color: white; }
+  .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
+  .icon-btn.edit:hover, .icon-btn.edit.on { background: var(--brown); color: var(--cream); }
+  .lnk.search { opacity: 0.42; }
+
+  /* Inline edit + filter */
+  .rep-filter { margin-bottom: 12px; }
+  .rep-filter input { width: 100%; }
+  .song-item { display: flex; flex-direction: column; }
+  .song-item.editing .song-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .song-edit { display: none; background: rgba(74,46,26,0.05); border: 1px solid var(--line); border-top: none; border-radius: 0 0 3px 3px; padding: 13px; }
+  .song-edit.show { display: block; }
+  .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .edit-grid label { display: flex; flex-direction: column; gap: 4px; font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
+  .edit-grid label.wide { grid-column: 1 / -1; }
+  .edit-grid .lbl-hint { text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.7; font-family: 'Playfair Display', serif; }
+  .edit-grid input { background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; text-transform: none; letter-spacing: normal; }
+  .edit-grid input:focus { border-color: var(--rust); background: #fff; }
+  .edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 11px; }
+  .edit-saved { font-family: 'Special Elite', cursive; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+  .edit-saved.show { opacity: 1; }
+  @media (max-width: 560px) { .edit-grid { grid-template-columns: 1fr; } }
 
   .empty-state { text-align: center; color: var(--faded); padding: 24px 10px; }
   .empty-state .big { font-size: 1.8rem; opacity: 0.4; margin-bottom: 6px; }
@@ -215,6 +236,10 @@
           <button class="btn" id="mAddBtn" style="height:36px">Add</button>
         </div>
 
+        <div class="rep-filter" id="repFilterWrap" style="display:none">
+          <input class="text-input" id="repFilter" type="text" placeholder="🔍 Filter this song list…" autocomplete="off">
+        </div>
+
         <div class="song-list" id="repList"></div>
       </div>
     </div>
@@ -258,6 +283,8 @@ let repCache = [];
 let libraryCache = [];
 let setlistsUnsub = null;
 let setlistCache = [];
+let repEditingId = null;   // song-list row open for inline edit
+let repFilterTerm = '';
 
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
@@ -310,7 +337,7 @@ async function loadBand() {
   repUnsub = onSnapshot(query(repCol()), snap2 => {
     repCache = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
     repCache.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    renderRepertoire();
+    if (!repEditingId) renderRepertoire();
     if (!$('libPicker').classList.contains('hidden')) renderLibPicker($('libSearch').value);
   }, err => toast('Song list error: ' + err.message));
 
@@ -336,9 +363,14 @@ function renderMembers() {
   });
 }
 
-// ── Repertoire render ──
+// ── Song list render ──
+function repMatch(s) {
+  const q = repFilterTerm.trim().toLowerCase();
+  return !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
+}
 function renderRepertoire() {
   $('repCount').textContent = repCache.length + (repCache.length === 1 ? ' song' : ' songs');
+  $('repFilterWrap').style.display = repCache.length > 6 ? '' : 'none';
   const list = $('repList');
   list.innerHTML = '';
   if (!repCache.length) {
@@ -348,34 +380,104 @@ function renderRepertoire() {
     list.appendChild(e);
     return;
   }
-  repCache.forEach(s => {
-    const row = document.createElement('div');
-    row.className = 'song-row';
-    row.innerHTML = `
+  const shown = repCache.filter(repMatch);
+  if (!shown.length) {
+    const e = document.createElement('div');
+    e.className = 'empty-state';
+    e.innerHTML = `<p>No songs match “${esc(repFilterTerm.trim())}”.</p>`;
+    list.appendChild(e);
+    return;
+  }
+  shown.forEach(s => list.appendChild(repRow(s)));
+}
+
+function repRow(s) {
+  const editing = repEditingId === s.id;
+  const item = document.createElement('div');
+  item.className = 'song-item' + (editing ? ' editing' : '');
+  item.innerHTML = `
+    <div class="song-row">
       <div class="song-main">
         <div class="song-title">${esc(s.title)}</div>
         <div class="song-artist">${esc(s.artist || '—')}</div>
       </div>
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
-        <a class="lnk yt" href="${esc(ytLink(s))}" target="_blank" title="YouTube">▶</a>
-        <a class="lnk sp" href="${esc(spLink(s))}" target="_blank" title="Spotify">♫</a>
-        <a class="lnk ap" href="${esc(apLink(s))}" target="_blank" title="Apple Music"></a>
+        <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
+        <a class="lnk sp ${s.spotify ? '' : 'search'}" href="${esc(spLink(s))}" target="_blank" title="${s.spotify ? 'Open saved Spotify' : 'Search Spotify'}">♫</a>
+        <a class="lnk ap ${s.apple ? '' : 'search'}" href="${esc(apLink(s))}" target="_blank" title="${s.apple ? 'Open saved Apple Music' : 'Search Apple Music'}"></a>
       </div>
-      <button class="icon-btn del" title="Remove from band">✕</button>`;
-    const keyInput = row.querySelector('.key-input');
-    keyInput.addEventListener('change', () => updateDoc(repDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
-    row.querySelector('.del').addEventListener('click', () => {
-      if (confirm(`Remove "${s.title}" from ${band.name}'s song list?`)) deleteDoc(repDoc(s.id));
-    });
-    list.appendChild(row);
+      <button class="icon-btn edit${editing ? ' on' : ''}" title="Quick edit">✏️</button>
+      <button class="icon-btn del" title="Remove from band">✕</button>
+    </div>
+    <div class="song-edit${editing ? ' show' : ''}">
+      <div class="edit-grid">
+        <label>Title<input data-f="title" value="${esc(s.title || '')}"></label>
+        <label>Artist<input data-f="artist" value="${esc(s.artist || '')}"></label>
+        <label class="wide">YouTube URL <span class="lbl-hint">— paste one to lock in a specific video</span><input data-f="youtube" placeholder="https://youtube.com/watch?v=…" value="${esc(s.youtube || '')}"></label>
+        <label>Spotify URL<input data-f="spotify" placeholder="Optional" value="${esc(s.spotify || '')}"></label>
+        <label>Apple Music URL<input data-f="apple" placeholder="Optional" value="${esc(s.apple || '')}"></label>
+      </div>
+      <div class="edit-actions"><span class="edit-saved">Saved ✓</span><button class="btn sm edit-done">Done</button></div>
+    </div>`;
+
+  const row = item.querySelector('.song-row');
+  const keyInput = row.querySelector('.key-input');
+  keyInput.addEventListener('change', () => updateDoc(repDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
+  row.querySelector('.del').addEventListener('click', () => {
+    if (confirm(`Remove "${s.title}" from ${band.name}'s song list?`)) deleteDoc(repDoc(s.id));
   });
+  row.querySelector('.edit').addEventListener('click', () => {
+    repEditingId = (repEditingId === s.id) ? null : s.id;
+    renderRepertoire();
+    if (repEditingId === s.id) {
+      const inp = document.querySelector('.song-item.editing .song-edit input[data-f="title"]');
+      if (inp) inp.focus();
+    }
+  });
+
+  const editPanel = item.querySelector('.song-edit');
+  const savedNote = editPanel.querySelector('.edit-saved');
+  const flashSaved = () => { savedNote.classList.add('show'); setTimeout(() => savedNote.classList.remove('show'), 1400); };
+  const normUrl = v => { v = (v || '').trim(); return v && !/^https?:\/\//i.test(v) ? 'https://' + v : v; };
+  editPanel.querySelectorAll('input[data-f]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const f = inp.dataset.f;
+      let val = inp.value.trim();
+      if (f === 'youtube' || f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+      try {
+        await updateDoc(repDoc(s.id), { [f]: val, updatedAt: serverTimestamp() });
+        s[f] = val;
+        if (f === 'title') row.querySelector('.song-title').textContent = val || '(untitled)';
+        if (f === 'artist') row.querySelector('.song-artist').textContent = val || '—';
+        if (f === 'youtube') refreshLnk(row.querySelector('.lnk.yt'), val, ytLink(s), 'video', 'YouTube');
+        if (f === 'spotify') refreshLnk(row.querySelector('.lnk.sp'), val, spLink(s), 'Spotify', 'Spotify');
+        if (f === 'apple')   refreshLnk(row.querySelector('.lnk.ap'), val, apLink(s), 'Apple Music', 'Apple Music');
+        flashSaved();
+      } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
+    });
+  });
+  editPanel.querySelector('.edit-done').addEventListener('click', () => { repEditingId = null; renderRepertoire(); });
+
+  return item;
+}
+
+function refreshLnk(el, savedVal, computedHref, savedNoun, searchNoun) {
+  if (!el) return;
+  el.href = computedHref;
+  if (savedVal) { el.classList.remove('search'); el.title = 'Open saved ' + savedNoun; }
+  else { el.classList.add('search'); el.title = 'Search ' + searchNoun; }
 }
 
 function repHas(title, artist) {
   const t = (title || '').toLowerCase(), a = (artist || '').toLowerCase();
   return repCache.some(s => (s.title || '').toLowerCase() === t && (s.artist || '').toLowerCase() === a);
 }
+
+$('repFilter').addEventListener('input', () => {
+  repFilterTerm = $('repFilter').value;
+  if (!repEditingId) renderRepertoire();
+});
 
 // ── Add from library ──
 $('fromLibBtn').addEventListener('click', async () => {
