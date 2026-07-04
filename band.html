@@ -161,6 +161,9 @@
   .settings-body.show { display: block; }
   .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 560px) { .settings-grid { grid-template-columns: 1fr; } }
+  .add-member { display: flex; gap: 8px; margin: 8px 0 6px; }
+  .add-member input { flex: 1; }
+  .share-hint { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.76rem; color: var(--faded); margin-bottom: 14px; line-height: 1.5; }
 
   .soon-note { color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; text-align: center; padding: 10px 6px; line-height: 1.6; }
 
@@ -211,7 +214,13 @@
     <div class="panel" id="settingsPanel" style="display:none">
       <div class="panel-header"><span>⚙</span> Band Settings</div>
       <div class="panel-body settings-body" id="settingsBody">
+        <label class="field-label">Members</label>
         <div class="members-row" id="membersRow"></div>
+        <div class="add-member">
+          <input class="text-input" id="newMemberId" type="text" placeholder="Add a bandmate — paste their Member ID (from their Profile)" autocomplete="off">
+          <button class="btn" id="addMemberBtn">＋ Add</button>
+        </div>
+        <div class="share-hint">Bandmates share this band's Song List and setlists. Ask them for their <strong>Member ID</strong> (shown on their Profile page) and paste it above. They'll need to sign in once first.</div>
         <div class="settings-grid">
           <div><label class="field-label">Band Name</label><input class="text-input" id="setName" type="text" maxlength="80"></div>
           <div><label class="field-label">Your Role</label><input class="text-input" id="setRole" type="text" maxlength="80" placeholder="e.g. Lead guitar"></div>
@@ -298,7 +307,7 @@
 import { auth, db } from './firebase-init.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, updateDoc, deleteDoc, collection, addDoc, getDocs, onSnapshot,
-         query, serverTimestamp }
+         query, serverTimestamp, arrayUnion }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $ = id => document.getElementById(id);
@@ -628,6 +637,30 @@ $('deleteBandBtn').addEventListener('click', async () => {
   try { await deleteDoc(bandDoc()); location.href = 'bands.html'; }
   catch (e) { toast('Delete failed: ' + (e.code || e.message)); }
 });
+
+// ── Add member (share the band) ──
+$('addMemberBtn').addEventListener('click', addMember);
+$('newMemberId').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
+async function addMember() {
+  const id = $('newMemberId').value.trim();
+  if (!id) { toast('Paste a Member ID'); return; }
+  if (id === user.uid) { toast("That's your own ID — you're already in the band"); return; }
+  if (!/^[A-Za-z0-9]{20,40}$/.test(id)) { toast("That doesn't look like a Member ID"); return; }
+  if (band.memberUids && band.memberUids.includes(id)) { toast('Already a member'); return; }
+  const btn = $('addMemberBtn'); btn.disabled = true;
+  try {
+    const upd = { memberUids: arrayUnion(id), updatedAt: serverTimestamp() };
+    if (!(band.members && band.members[id])) upd[`members.${id}`] = { name: 'Member', role: '' };
+    await updateDoc(bandDoc(), upd);
+    band.memberUids = [...(band.memberUids || []), id];
+    if (!band.members) band.members = {};
+    if (!band.members[id]) band.members[id] = { name: 'Member', role: '' };
+    renderMembers();
+    $('newMemberId').value = '';
+    toast('Bandmate added — they can now see this band');
+  } catch (e) { toast('Could not add: ' + (e.code || e.message)); }
+  finally { btn.disabled = false; }
+}
 
 // ── Setlists ──
 function fmtDate(d) {

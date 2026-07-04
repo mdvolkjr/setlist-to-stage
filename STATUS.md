@@ -29,11 +29,15 @@ This is the first thing to read. It reflects the app as it actually is, not the 
 - **Playlist export** (`setlist.html`, "▶ Export") — **YouTube auto-playlist** (plays the setlist in order, no login), **M3U** download for uploaded MP3s, **copy ordered list** for Spotify/Apple. Pure logic in `lib/playlist.js`, unit-tested in `tests/playlist.test.js` (6 tests passing).
 - **Practice session mode** (`setlist.html`, "🎯 Practice") — tick songs to focus on (or run the whole setlist), then a distraction-free one-song-at-a-time runner with embedded YouTube, key, progress, and ◀/▶ (arrow keys work).
 - **Quiz / pop-quiz mode** (`band.html`, "🎲 Pop Quiz") — random song from the band Song List, Reveal → Next recall drill.
+- **Add-new-song from a setlist** — the setlist picker's "New" row creates the song in the band Song List + your Library and drops it into the set, in one step.
+- **Search-YouTube (🔍)** on every song row and the detail page; bare video ids auto-expand to watch URLs.
+- **Bulk import** (`index.html`, "⇪ Bulk") — paste a list → heuristic parser (`lib/import.js`, 8 tests) → review table with duplicate detection + edit → batch add.
+- **Band sharing** — each Profile shows a copyable **Member ID**; band **Settings → Add a bandmate** by that ID. Members share the band's Song List and setlists (no security-rule change needed — membership already governs access).
 
 ## ⛔ Not started (next sessions)
 
-- **Bulk import** (heuristic parser + review UI) — planned next.
 - **Sheet-music / tab file upload + on-screen viewer** (schema has external tab links; file upload+viewer not yet).
+- **Join-by-code** (self-serve band joining) — currently an existing member adds others by ID; a code/link join would need a rules tweak.
 - **Spotify/Apple real playlist creation**, **pitch-shift plugin integration** (research notes below), **mobile/PWA pass**, **automated test suite** for logic modules.
 
 ---

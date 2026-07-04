@@ -81,6 +81,8 @@
   .identity img { width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--tan); }
   .identity .id-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.1rem; }
   .identity .id-email { font-size: 0.78rem; color: var(--faded); font-style: italic; }
+  .mid-box { display: flex; gap: 8px; align-items: center; }
+  .mid-box code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; font-family: 'Courier New', monospace; font-size: 0.78rem; color: var(--ink); }
 
   .field-label {
     font-family: 'Special Elite', cursive; font-size: 0.65rem; letter-spacing: 0.1em;
@@ -207,9 +209,16 @@
         <label class="field-label">Home Base</label>
         <input class="text-input" id="location" type="text" placeholder="e.g. Austin, TX">
       </div>
-      <div class="field" style="margin-bottom:0">
+      <div class="field">
         <label class="field-label">About / Bio</label>
         <textarea class="text-input" id="bio" placeholder="A few words about you as a player — style, influences, bands you've been in…"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="field-label">Your Member ID <span style="text-transform:none;font-style:italic;opacity:0.7">— give this to a band owner so they can add you</span></label>
+        <div class="mid-box">
+          <code id="memberId">…</code>
+          <button class="btn ghost" id="copyIdBtn" type="button">Copy</button>
+        </div>
       </div>
     </div>
   </div>
@@ -287,6 +296,7 @@ onAuthStateChanged(auth, async user => {
   if (user.photoURL) { $('idPhoto').src = user.photoURL; $('idPhoto').style.display = ''; }
   $('idName').textContent = user.displayName || user.email;
   $('idEmail').textContent = user.email || '';
+  $('memberId').textContent = user.uid;
 
   await loadProfile(user);
 });
@@ -381,6 +391,11 @@ async function saveProfile() {
 }
 
 $('saveBtn').addEventListener('click', saveProfile);
+$('copyIdBtn').addEventListener('click', async () => {
+  const id = $('memberId').textContent;
+  try { await navigator.clipboard.writeText(id); toast('Member ID copied'); }
+  catch { toast('Copy failed — select the ID and copy manually'); }
+});
 </script>
 </body>
 </html>

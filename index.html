@@ -233,6 +233,30 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* ── Bulk import modal ── */
+  .bulk-modal { position: fixed; inset: 0; z-index: 400; background: rgba(26,15,6,0.6); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+  .bulk-modal.show { display: flex; }
+  .bulk-card { background: var(--cream); border: 1px solid var(--tan); border-radius: 6px; max-width: 640px; width: 100%; box-shadow: 0 12px 44px rgba(0,0,0,0.4); }
+  .bulk-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--brown); color: var(--cream); border-radius: 6px 6px 0 0; font-family: 'Special Elite', cursive; letter-spacing: 0.06em; }
+  .bulk-x { background: none; border: none; color: var(--tan); font-size: 16px; cursor: pointer; }
+  .bulk-x:hover { color: var(--cream); }
+  .bulk-body { padding: 18px; }
+  .bulk-hint { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); font-size: 0.82rem; margin-bottom: 12px; }
+  #bulkText { width: 100%; min-height: 180px; resize: vertical; background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 4px; padding: 12px; font-family: 'Libre Baskerville', serif; font-size: 0.86rem; color: var(--ink); outline: none; line-height: 1.5; }
+  #bulkText:focus { border-color: var(--rust); background: #fff; }
+  .bulk-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .bulk-review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-family: 'Special Elite', cursive; font-size: 0.72rem; color: var(--faded); letter-spacing: 0.05em; }
+  .bulk-skip { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .bulk-list { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .bulk-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--parchment); }
+  .bulk-row.dup { opacity: 0.72; }
+  .bulk-inc { width: 16px; height: 16px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
+  .bulk-t { flex: 1.4 1 0; min-width: 0; }
+  .bulk-a { flex: 1 1 0; min-width: 0; }
+  .bulk-t, .bulk-a { background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; }
+  .bulk-t:focus, .bulk-a:focus { border-color: var(--rust); background: #fff; }
+  .bulk-dup-badge { flex-shrink: 0; font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.05em; color: var(--rust); background: rgba(139,58,26,0.12); border: 1px solid rgba(139,58,26,0.25); border-radius: 10px; padding: 2px 8px; }
+
   @media (max-width: 620px) {
     .song-artist { display: none; }
     .link-icons .lnk.ap { display: none; }
@@ -278,6 +302,7 @@
   <div class="add-bar">
     <div class="add-bar-input-row">
       <input type="text" id="songSearch" placeholder="Add a song — type a title to search…" autocomplete="off">
+      <button class="btn" id="bulkBtn" title="Paste a whole list of songs" style="flex-shrink:0">⇪ Bulk</button>
     </div>
     <div class="suggest-box" id="suggestBox"></div>
   </div>
@@ -310,6 +335,35 @@
 </div>
 
 <div class="loading" id="loading">Loading…</div>
+
+<!-- Bulk import -->
+<div class="bulk-modal" id="bulkModal">
+  <div class="bulk-card">
+    <div class="bulk-head"><span>⇪ Bulk add songs</span><button class="bulk-x" id="bulkClose">✕</button></div>
+    <div class="bulk-body">
+      <div id="bulkStep1">
+        <p class="bulk-hint">Paste a list — one song per line. Understands “Title - Artist”, “Title by Artist”, “Title, Artist”, tabs, numbered lists, or just titles.</p>
+        <textarea id="bulkText" placeholder="Mama Tried - Merle Haggard&#10;Honky Tonk Women - Rolling Stones&#10;Freeborn"></textarea>
+        <div class="bulk-actions">
+          <button class="btn ghost" id="bulkCancel">Cancel</button>
+          <button class="btn" id="bulkParse">Review →</button>
+        </div>
+      </div>
+      <div id="bulkStep2" style="display:none">
+        <div class="bulk-review-head">
+          <span id="bulkSummary"></span>
+          <label class="bulk-skip"><input type="checkbox" id="bulkSkipDup" checked> Skip duplicates</label>
+        </div>
+        <div class="bulk-list" id="bulkList"></div>
+        <div class="bulk-actions">
+          <button class="btn ghost" id="bulkBack">← Back</button>
+          <button class="btn" id="bulkCommit">Add <span id="bulkCount">0</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -319,6 +373,7 @@ import { onAuthStateChanged, signInWithPopup, signOut }
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
          serverTimestamp, getDocs, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { parseSongList, markDuplicates } from './lib/import.js';
 
 let currentUser = null;
 let songsUnsub  = null;
@@ -622,6 +677,90 @@ async function addSong(data) {
   }
   searchInput.value = '';
   hideSuggest();
+}
+
+// ── Bulk import ──
+let bulkParsed = [];
+document.getElementById('bulkBtn').addEventListener('click', openBulk);
+document.getElementById('bulkClose').addEventListener('click', closeBulk);
+document.getElementById('bulkCancel').addEventListener('click', closeBulk);
+document.getElementById('bulkBack').addEventListener('click', () => { document.getElementById('bulkStep2').style.display = 'none'; document.getElementById('bulkStep1').style.display = ''; });
+document.getElementById('bulkParse').addEventListener('click', doParse);
+document.getElementById('bulkSkipDup').addEventListener('change', applySkipDup);
+document.getElementById('bulkCommit').addEventListener('click', commitBulk);
+
+function openBulk() {
+  document.getElementById('bulkModal').classList.add('show');
+  document.getElementById('bulkStep1').style.display = '';
+  document.getElementById('bulkStep2').style.display = 'none';
+  document.getElementById('bulkText').value = '';
+  document.getElementById('bulkText').focus();
+}
+function closeBulk() { document.getElementById('bulkModal').classList.remove('show'); }
+
+function doParse() {
+  const parsed = parseSongList(document.getElementById('bulkText').value);
+  if (!parsed.length) { toast('Nothing to import — paste some songs'); return; }
+  bulkParsed = markDuplicates(parsed, songsCache).map(m => ({ ...m, include: !m.dup }));
+  renderBulkList();
+  document.getElementById('bulkStep1').style.display = 'none';
+  document.getElementById('bulkStep2').style.display = '';
+}
+
+function applySkipDup() {
+  const skip = document.getElementById('bulkSkipDup').checked;
+  bulkParsed.forEach(p => { if (p.dup) p.include = !skip; });
+  renderBulkList();
+}
+
+function renderBulkList() {
+  const list = document.getElementById('bulkList');
+  list.innerHTML = '';
+  bulkParsed.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'bulk-row' + (p.dup ? ' dup' : '');
+    row.innerHTML = `
+      <input type="checkbox" class="bulk-inc" ${p.include ? 'checked' : ''}>
+      <input type="text" class="bulk-t" value="${esc(p.title)}" placeholder="Title">
+      <input type="text" class="bulk-a" value="${esc(p.artist)}" placeholder="Artist">
+      ${p.dup ? '<span class="bulk-dup-badge">in library</span>' : ''}`;
+    const inc = row.querySelector('.bulk-inc');
+    inc.addEventListener('change', () => { p.include = inc.checked; updateBulkCount(); });
+    row.querySelector('.bulk-t').addEventListener('input', e => { p.title = e.target.value; updateBulkCount(); });
+    row.querySelector('.bulk-a').addEventListener('input', e => { p.artist = e.target.value; });
+    list.appendChild(row);
+  });
+  const dups = bulkParsed.filter(p => p.dup).length;
+  document.getElementById('bulkSummary').textContent = `${bulkParsed.length} parsed${dups ? ` · ${dups} already in library` : ''}`;
+  updateBulkCount();
+}
+function updateBulkCount() {
+  const n = bulkParsed.filter(p => p.include && p.title.trim()).length;
+  document.getElementById('bulkCount').textContent = n + ' song' + (n === 1 ? '' : 's');
+}
+
+async function commitBulk() {
+  const toAdd = bulkParsed.filter(p => p.include && p.title.trim());
+  if (!toAdd.length) { toast('Nothing selected'); return; }
+  const btn = document.getElementById('bulkCommit'); btn.disabled = true;
+  try {
+    for (let i = 0; i < toAdd.length; i += 450) {
+      const batch = writeBatch(db);
+      toAdd.slice(i, i + 450).forEach(p => {
+        batch.set(doc(songsCol()), {
+          title: p.title.trim(), artist: p.artist.trim(), key: '', status: 'learning',
+          youtube: '', spotify: '', apple: '', songsterr: '', ug: '', tab1: '', tab2: '',
+          tempo: '', structure: '', tricky: '', notes: '', artwork: '',
+          mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+      });
+      await batch.commit();
+    }
+    toast(`Added ${toAdd.length} song${toAdd.length === 1 ? '' : 's'}`);
+    closeBulk();
+  } catch (e) { toast('Import failed: ' + (e.code || e.message)); }
+  finally { btn.disabled = false; }
 }
 
 // ── One-time import of the classic 44-song book ──
