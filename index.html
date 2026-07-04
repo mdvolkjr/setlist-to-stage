@@ -205,6 +205,8 @@
   .lnk.sp:hover { background: var(--green); color: white; }
   .lnk.ap { background: rgba(74,46,26,0.1); color: var(--brown); }
   .lnk.ap:hover { background: var(--brown); color: white; }
+  .lnk.yts { background: rgba(200,169,122,0.18); color: var(--faded); font-size: 11px; }
+  .lnk.yts:hover { background: var(--brown); color: white; }
 
   .row-actions { display: flex; gap: 5px; flex-shrink: 0; }
   .icon-btn {
@@ -335,7 +337,15 @@ function songsCol() { return collection(db, 'users', currentUser.uid, 'songs'); 
 function songDoc(id) { return doc(db, 'users', currentUser.uid, 'songs', id); }
 
 // Search fallbacks when a specific link isn't saved
-function ytLink(s)  { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function ytSearch(s){ return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
+function ytLink(s)  { return s.youtube || ytSearch(s); }
+// Normalize a pasted YouTube value: a bare 11-char id becomes a full watch URL.
+function normYouTube(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+}
 function spLink(s)  { return s.spotify || 'https://open.spotify.com/search/' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
 function apLink(s)  { return s.apple   || 'https://music.apple.com/us/search?term=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
 
@@ -436,6 +446,7 @@ function songRow(s) {
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
         <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
+        <a class="lnk yts" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube for this song">🔍</a>
         <a class="lnk sp ${s.spotify ? '' : 'search'}" href="${esc(spLink(s))}" target="_blank" title="${s.spotify ? 'Open saved Spotify' : 'Search Spotify'}">♫</a>
         <a class="lnk ap ${s.apple ? '' : 'search'}" href="${esc(apLink(s))}" target="_blank" title="${s.apple ? 'Open saved Apple Music' : 'Search Apple Music'}"></a>
       </div>
@@ -487,12 +498,13 @@ function songRow(s) {
     inp.addEventListener('change', async () => {
       const f = inp.dataset.f;
       let val = inp.value.trim();
-      if (f === 'youtube' || f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+      if (f === 'youtube') val = normYouTube(inp.value);
+      else if (f === 'spotify' || f === 'apple') val = normUrl(inp.value);
       try {
         await updateDoc(songDoc(s.id), { [f]: val, updatedAt: serverTimestamp() });
         s[f] = val;  // keep local copy fresh for live href updates
-        if (f === 'title') row.querySelector('.song-title').textContent = val || '(untitled)';
-        if (f === 'artist') row.querySelector('.song-artist').textContent = val || '—';
+        if (f === 'title') { row.querySelector('.song-title').textContent = val || '(untitled)'; row.querySelector('.lnk.yts').href = ytSearch(s); }
+        if (f === 'artist') { row.querySelector('.song-artist').textContent = val || '—'; row.querySelector('.lnk.yts').href = ytSearch(s); }
         if (f === 'youtube') refreshLnk(row.querySelector('.lnk.yt'), val, ytLink(s), 'video', 'YouTube');
         if (f === 'spotify') refreshLnk(row.querySelector('.lnk.sp'), val, spLink(s), 'Spotify', 'Spotify');
         if (f === 'apple')   refreshLnk(row.querySelector('.lnk.ap'), val, apLink(s), 'Apple Music', 'Apple Music');

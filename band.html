@@ -112,6 +112,7 @@
   .lnk.yt { background: rgba(139,58,26,0.12); color: var(--rust); } .lnk.yt:hover { background: var(--rust); color: white; }
   .lnk.sp { background: rgba(58,107,58,0.12); color: var(--green); } .lnk.sp:hover { background: var(--green); color: white; }
   .lnk.ap { background: rgba(74,46,26,0.1); color: var(--brown); } .lnk.ap:hover { background: var(--brown); color: white; }
+  .lnk.yts { background: rgba(200,169,122,0.18); color: var(--faded); font-size: 11px; } .lnk.yts:hover { background: var(--brown); color: white; }
   .icon-btn { width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
   .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
   .icon-btn.del:hover { background: var(--rust); color: white; }
@@ -320,7 +321,14 @@ function repCol() { return collection(db, 'bands', bandId, 'repertoire'); }
 function repDoc(id) { return doc(db, 'bands', bandId, 'repertoire', id); }
 function setlistsCol() { return collection(db, 'bands', bandId, 'setlists'); }
 
-function ytLink(s) { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function ytSearch(s){ return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
+function ytLink(s) { return s.youtube || ytSearch(s); }
+function normYouTube(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+}
 function spLink(s) { return s.spotify || 'https://open.spotify.com/search/' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
 function apLink(s) { return s.apple   || 'https://music.apple.com/us/search?term=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
 
@@ -431,6 +439,7 @@ function repRow(s) {
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
         <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
+        <a class="lnk yts" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube for this song">🔍</a>
         <a class="lnk sp ${s.spotify ? '' : 'search'}" href="${esc(spLink(s))}" target="_blank" title="${s.spotify ? 'Open saved Spotify' : 'Search Spotify'}">♫</a>
         <a class="lnk ap ${s.apple ? '' : 'search'}" href="${esc(apLink(s))}" target="_blank" title="${s.apple ? 'Open saved Apple Music' : 'Search Apple Music'}"></a>
       </div>
@@ -471,12 +480,13 @@ function repRow(s) {
     inp.addEventListener('change', async () => {
       const f = inp.dataset.f;
       let val = inp.value.trim();
-      if (f === 'youtube' || f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+      if (f === 'youtube') val = normYouTube(inp.value);
+      else if (f === 'spotify' || f === 'apple') val = normUrl(inp.value);
       try {
         await updateDoc(repDoc(s.id), { [f]: val, updatedAt: serverTimestamp() });
         s[f] = val;
-        if (f === 'title') row.querySelector('.song-title').textContent = val || '(untitled)';
-        if (f === 'artist') row.querySelector('.song-artist').textContent = val || '—';
+        if (f === 'title') { row.querySelector('.song-title').textContent = val || '(untitled)'; row.querySelector('.lnk.yts').href = ytSearch(s); }
+        if (f === 'artist') { row.querySelector('.song-artist').textContent = val || '—'; row.querySelector('.lnk.yts').href = ytSearch(s); }
         if (f === 'youtube') refreshLnk(row.querySelector('.lnk.yt'), val, ytLink(s), 'video', 'YouTube');
         if (f === 'spotify') refreshLnk(row.querySelector('.lnk.sp'), val, spLink(s), 'Spotify', 'Spotify');
         if (f === 'apple')   refreshLnk(row.querySelector('.lnk.ap'), val, apLink(s), 'Apple Music', 'Apple Music');
