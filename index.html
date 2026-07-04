@@ -22,13 +22,27 @@
   /* ── Top bar ── */
   .topbar {
     background: var(--brown); padding: 12px 22px;
-    display: flex; align-items: center; gap: 16px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     position: sticky; top: 0; z-index: 50;
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   }
-  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; }
+  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
   .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
   .topbar-spacer { flex: 1; }
+
+  /* ── Primary nav ── */
+  .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .navlink {
+    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
+    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
+  .navlink.active {
+    background: rgba(139,58,26,0.45); color: var(--cream);
+    box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3);
+  }
   .user-chip { display: flex; align-items: center; gap: 9px; }
   .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
   .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
@@ -194,9 +208,13 @@
 
 <!-- App -->
 <div class="topbar">
-  <div class="brand">The Setlist Book<small>My Library</small></div>
+  <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
+  <nav class="mainnav">
+    <a class="navlink active" href="index.html">📚 Library</a>
+    <a class="navlink" href="profile.html">👤 Profile</a>
+    <a class="navlink" href="legacy-setlist.html">📋 Band Setlist</a>
+  </nav>
   <div class="topbar-spacer"></div>
-  <a class="btn ghost" href="legacy-setlist.html" title="The original band setlist view">Band Setlist</a>
   <div class="user-chip" id="userChip"></div>
   <button class="btn ghost" id="signoutBtn" style="display:none">Sign out</button>
 </div>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Setlist Book — My Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
+    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
+    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
+  }
+  body {
+    background-color: var(--cream);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    color: var(--ink); min-height: 100vh;
+  }
+
+  /* ── Top bar + nav ── */
+  .topbar {
+    background: var(--brown); padding: 12px 22px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
+  .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
+  .topbar-spacer { flex: 1; }
+  .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .navlink {
+    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
+    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
+  .navlink.active {
+    background: rgba(139,58,26,0.45); color: var(--cream);
+    box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3);
+  }
+  .user-chip { display: flex; align-items: center; gap: 9px; }
+  .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
+  .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
+  .btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
+    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
+    padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: #a04020; }
+  .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
+  .btn.ghost:hover { background: rgba(255,255,255,0.15); }
+
+  /* ── Layout ── */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 34px 18px 90px; }
+  header.page-head { text-align: center; margin-bottom: 30px; }
+  header.page-head .ornament { color: var(--tan); font-size: 1.1rem; letter-spacing: 0.3em; margin-bottom: 6px; }
+  header.page-head h1 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: clamp(1.8rem,4vw,2.6rem); letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+  header.page-head .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); margin-top: 5px; }
+
+  /* ── Cards ── */
+  .panel {
+    background: var(--parchment); border: 1px solid var(--tan);
+    border-radius: 3px; overflow: hidden; margin-bottom: 22px;
+    box-shadow: 2px 3px 12px rgba(74,46,26,0.1);
+  }
+  .panel-header {
+    background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line);
+    padding: 11px 18px; font-family: 'Special Elite', cursive;
+    font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faded); display: flex; align-items: center; gap: 8px;
+  }
+  .panel-body { padding: 18px; }
+
+  .identity { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .identity img { width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--tan); }
+  .identity .id-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.1rem; }
+  .identity .id-email { font-size: 0.78rem; color: var(--faded); font-style: italic; }
+
+  .field-label {
+    font-family: 'Special Elite', cursive; font-size: 0.65rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--faded); margin-bottom: 5px; display: block;
+  }
+  .text-input {
+    width: 100%; background: rgba(255,255,255,0.6); border: 1px solid var(--line);
+    border-radius: 3px; padding: 9px 11px; font-family: 'Libre Baskerville', serif;
+    font-size: 0.9rem; color: var(--ink); outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .text-input:focus { border-color: var(--rust); background: #fff; }
+  .text-input::placeholder { color: var(--tan); font-style: italic; }
+  textarea.text-input { resize: vertical; min-height: 80px; line-height: 1.55; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .field { margin-bottom: 14px; }
+  @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
+
+  /* ── Instruments ── */
+  .inst-list { display: flex; flex-direction: column; gap: 9px; margin-bottom: 12px; }
+  .inst-row {
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(255,255,255,0.45); border: 1px solid var(--line);
+    border-radius: 3px; padding: 8px 10px;
+  }
+  .inst-row .inst-name { flex: 1 1 40%; min-width: 0; }
+  .inst-row .inst-detail { flex: 1 1 55%; min-width: 0; }
+  .inst-row .text-input { background: rgba(255,255,255,0.7); }
+  .inst-del {
+    flex-shrink: 0; width: 30px; height: 30px; background: rgba(139,58,26,0.12);
+    border: 1px solid rgba(139,58,26,0.25); border-radius: 3px; color: var(--rust);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; line-height: 1; transition: background 0.15s;
+  }
+  .inst-del:hover { background: var(--rust); color: white; }
+  .add-inst-btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
+    background: rgba(74,46,26,0.08); color: var(--brown); border: 1px dashed var(--tan);
+    border-radius: 3px; padding: 9px 16px; cursor: pointer; width: 100%;
+    text-transform: uppercase; transition: background 0.15s;
+  }
+  .add-inst-btn:hover { background: rgba(74,46,26,0.15); }
+  .inst-empty { color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; text-align: center; padding: 8px 0 14px; }
+
+  /* ── Save bar ── */
+  .save-bar { display: flex; align-items: center; gap: 14px; justify-content: flex-end; }
+  .save-bar .saved-note { font-family: 'Special Elite', cursive; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+  .save-bar .saved-note.show { opacity: 1; }
+  .save-big {
+    font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.08em;
+    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
+    padding: 11px 26px; cursor: pointer; transition: background 0.15s; text-transform: uppercase;
+  }
+  .save-big:hover { background: #a04020; }
+
+  .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
+  .gate h2 { font-family: 'Special Elite', cursive; color: var(--brown); margin-bottom: 10px; }
+  .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive;
+    font-size: 0.78rem; letter-spacing: 0.06em; padding: 10px 20px; border-radius: 4px;
+    box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s; z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 620px) { .user-chip .uname { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- Top bar + nav -->
+<div class="topbar">
+  <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
+  <nav class="mainnav">
+    <a class="navlink" href="index.html">📚 Library</a>
+    <a class="navlink active" href="profile.html">👤 Profile</a>
+    <a class="navlink" href="legacy-setlist.html">📋 Band Setlist</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <div class="user-chip" id="userChip"></div>
+  <button class="btn ghost" id="signoutBtn" style="display:none">Sign out</button>
+</div>
+
+<!-- Sign-in gate -->
+<div id="gate" class="gate" style="display:none">
+  <h2>Please sign in</h2>
+  <p>Open the <a href="index.html">library</a> and sign in with Google to edit your profile.</p>
+</div>
+
+<div class="loading" id="loading">Loading…</div>
+
+<!-- Content -->
+<div class="wrap" id="content" style="display:none">
+  <header class="page-head">
+    <div class="ornament">✦ ✦ ✦</div>
+    <h1>My Profile</h1>
+    <p class="subtitle">Who you are · What you play</p>
+  </header>
+
+  <!-- About You -->
+  <div class="panel">
+    <div class="panel-header"><span>👤</span> About You</div>
+    <div class="panel-body">
+      <div class="identity">
+        <img id="idPhoto" src="" alt="" style="display:none">
+        <div>
+          <div class="id-name" id="idName">—</div>
+          <div class="id-email" id="idEmail"></div>
+        </div>
+      </div>
+      <div class="row-2">
+        <div>
+          <label class="field-label">Display Name</label>
+          <input class="text-input" id="displayName" type="text" placeholder="What your bandmates call you">
+        </div>
+        <div>
+          <label class="field-label">Main Role</label>
+          <input class="text-input" id="role" type="text" placeholder="e.g. Rhythm guitar &amp; vocals">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Home Base</label>
+        <input class="text-input" id="location" type="text" placeholder="e.g. Austin, TX">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="field-label">About / Bio</label>
+        <textarea class="text-input" id="bio" placeholder="A few words about you as a player — style, influences, bands you've been in…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instruments -->
+  <div class="panel">
+    <div class="panel-header"><span>🎸</span> Your Instruments</div>
+    <div class="panel-body">
+      <div class="inst-list" id="instList"></div>
+      <button class="add-inst-btn" id="addInstBtn">+ Add an Instrument</button>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <div class="save-bar">
+    <span class="saved-note" id="savedNote">Saved ✓</span>
+    <button class="save-big" id="saveBtn">💾 Save Profile</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Instrument suggestions -->
+<datalist id="instrumentOptions">
+  <option value="Electric Guitar"></option>
+  <option value="Acoustic Guitar"></option>
+  <option value="Bass Guitar"></option>
+  <option value="Lead Vocals"></option>
+  <option value="Backing Vocals"></option>
+  <option value="Drums"></option>
+  <option value="Percussion"></option>
+  <option value="Keys / Piano"></option>
+  <option value="Organ"></option>
+  <option value="Mandolin"></option>
+  <option value="Banjo"></option>
+  <option value="Fiddle / Violin"></option>
+  <option value="Pedal Steel"></option>
+  <option value="Harmonica"></option>
+  <option value="Saxophone"></option>
+  <option value="Trumpet"></option>
+</datalist>
+
+<script type="module">
+import { auth, db } from './firebase-init.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+let uid = null;
+let instruments = [];      // [{ name, detail }]
+let saveTimer = null;
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1600); }
+function userDoc() { return doc(db, 'users', uid); }
+
+// ── Auth ──
+$('signoutBtn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    $('gate').style.display = 'block';
+    $('loading').style.display = 'none';
+    $('content').style.display = 'none';
+    $('userChip').innerHTML = '';
+    $('signoutBtn').style.display = 'none';
+    return;
+  }
+  uid = user.uid;
+  $('gate').style.display = 'none';
+  $('signoutBtn').style.display = '';
+  $('userChip').innerHTML = `${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="">` : ''}<span class="uname">${esc(user.displayName || user.email)}</span>`;
+
+  // Identity block (from Google account)
+  if (user.photoURL) { $('idPhoto').src = user.photoURL; $('idPhoto').style.display = ''; }
+  $('idName').textContent = user.displayName || user.email;
+  $('idEmail').textContent = user.email || '';
+
+  await loadProfile(user);
+});
+
+// ── Load ──
+async function loadProfile(user) {
+  let data = {};
+  try {
+    const snap = await getDoc(userDoc());
+    if (snap.exists()) data = snap.data();
+  } catch (e) {
+    toast('Could not load profile: ' + (e.code || e.message));
+  }
+  $('displayName').value = data.displayName || user.displayName || '';
+  $('role').value        = data.role || '';
+  $('location').value    = data.location || '';
+  $('bio').value         = data.bio || '';
+  instruments = Array.isArray(data.instruments) ? data.instruments.map(i => ({ name: i.name || '', detail: i.detail || '' })) : [];
+  renderInstruments();
+
+  $('loading').style.display = 'none';
+  $('content').style.display = 'block';
+
+  // Auto-save on field edits (debounced)
+  ['displayName','role','location','bio'].forEach(id =>
+    $(id).addEventListener('input', scheduleSave));
+}
+
+// ── Instruments ──
+function renderInstruments() {
+  const list = $('instList');
+  list.innerHTML = '';
+  if (!instruments.length) {
+    const e = document.createElement('div');
+    e.className = 'inst-empty';
+    e.textContent = 'No instruments yet — add what you play.';
+    list.appendChild(e);
+  }
+  instruments.forEach((inst, idx) => {
+    const row = document.createElement('div');
+    row.className = 'inst-row';
+    row.innerHTML = `
+      <input class="text-input inst-name" list="instrumentOptions" placeholder="Instrument" value="${esc(inst.name)}">
+      <input class="text-input inst-detail" placeholder="Details — brand, tuning, notes…" value="${esc(inst.detail)}">
+      <button class="inst-del" title="Remove">✕</button>`;
+    const [nameEl, detailEl] = row.querySelectorAll('input');
+    nameEl.addEventListener('input', () => { instruments[idx].name = nameEl.value; scheduleSave(); });
+    detailEl.addEventListener('input', () => { instruments[idx].detail = detailEl.value; scheduleSave(); });
+    row.querySelector('.inst-del').addEventListener('click', () => {
+      instruments.splice(idx, 1); renderInstruments(); scheduleSave();
+    });
+    list.appendChild(row);
+  });
+}
+
+$('addInstBtn').addEventListener('click', () => {
+  instruments.push({ name: '', detail: '' });
+  renderInstruments();
+  // focus the new row's name field
+  const rows = $('instList').querySelectorAll('.inst-row');
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector('.inst-name').focus();
+});
+
+// ── Save ──
+function scheduleSave() {
+  $('savedNote').classList.remove('show');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveProfile, 900);
+}
+
+async function saveProfile() {
+  if (!uid) return;
+  clearTimeout(saveTimer);
+  const payload = {
+    displayName: $('displayName').value.trim(),
+    role:        $('role').value.trim(),
+    location:    $('location').value.trim(),
+    bio:         $('bio').value.trim(),
+    instruments: instruments
+      .map(i => ({ name: (i.name || '').trim(), detail: (i.detail || '').trim() }))
+      .filter(i => i.name || i.detail),
+    updatedAt: serverTimestamp()
+  };
+  try {
+    await setDoc(userDoc(), payload, { merge: true });
+    const note = $('savedNote'); note.classList.add('show');
+    setTimeout(() => note.classList.remove('show'), 2000);
+  } catch (e) {
+    toast('Save failed: ' + (e.code || e.message));
+  }
+}
+
+$('saveBtn').addEventListener('click', saveProfile);
+</script>
+</body>
+</html>

@@ -3,9 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Person level ──
-    // A signed-in user fully owns their profile and private song library.
-    match /users/{userId}/{document=**} {
+    // A signed-in user fully owns their profile doc (users/{uid}) and every
+    // sub-collection under it (songs, …). The nested match is required because
+    // a recursive `{document=**}` on the parent does NOT cover the parent doc
+    // itself — only its descendants.
+    match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ── Band level (built out in a later pass) ──
