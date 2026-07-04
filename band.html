@@ -137,6 +137,15 @@
   .rep-filter input { width: 100%; }
   .song-item { display: flex; flex-direction: column; }
   .song-item.editing .song-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sort-lbl { font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); }
+  .sort-btn { background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; font-family: 'Special Elite', cursive; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--faded); padding: 5px 12px; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+  .sort-btn:hover { border-color: var(--rust); color: var(--rust); }
+  .sort-btn.active { background: rgba(139,58,26,0.12); border-color: var(--rust); color: var(--rust); }
+  .sort-btn .ar { font-size: 0.85em; }
+  .song-cols { display: flex; flex: 1; min-width: 0; gap: 12px; align-items: baseline; }
+  .c-title { flex: 1.6 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .c-artist { flex: 1.1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .song-edit { display: none; background: rgba(74,46,26,0.05); border: 1px solid var(--line); border-top: none; border-radius: 0 0 3px 3px; padding: 13px; }
   .song-edit.show { display: block; }
   .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -270,6 +279,13 @@
           <input class="text-input" id="repFilter" type="text" placeholder="🔍 Filter this song list…" autocomplete="off">
         </div>
 
+        <div class="sort-bar" id="repSortBar" style="display:none">
+          <span class="sort-lbl">Sort</span>
+          <button class="sort-btn active" data-sort="title">Song <span class="ar">▲</span></button>
+          <button class="sort-btn" data-sort="artist">Artist <span class="ar"></span></button>
+          <button class="sort-btn" data-sort="key">Key <span class="ar"></span></button>
+        </div>
+
         <div class="song-list" id="repList"></div>
       </div>
     </div>
@@ -329,6 +345,8 @@ let setlistsUnsub = null;
 let setlistCache = [];
 let repEditingId = null;   // song-list row open for inline edit
 let repFilterTerm = '';
+let repSortKey = 'title';
+let repSortDir = 1;
 
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
@@ -419,9 +437,19 @@ function repMatch(s) {
   const q = repFilterTerm.trim().toLowerCase();
   return !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
 }
+function repSort(arr) {
+  return [...arr].sort((a, b) => {
+    const av = (a[repSortKey] || '').toLowerCase(), bv = (b[repSortKey] || '').toLowerCase();
+    if (!av && bv) return 1; if (av && !bv) return -1;
+    if (av < bv) return -1 * repSortDir; if (av > bv) return 1 * repSortDir;
+    const at = (a.title || '').toLowerCase(), bt = (b.title || '').toLowerCase();
+    return at < bt ? -1 : at > bt ? 1 : 0;
+  });
+}
 function renderRepertoire() {
   $('repCount').textContent = repCache.length + (repCache.length === 1 ? ' song' : ' songs');
   $('repFilterWrap').style.display = repCache.length > 6 ? '' : 'none';
+  $('repSortBar').style.display = repCache.length > 1 ? '' : 'none';
   const list = $('repList');
   list.innerHTML = '';
   if (!repCache.length) {
@@ -431,7 +459,7 @@ function renderRepertoire() {
     list.appendChild(e);
     return;
   }
-  const shown = repCache.filter(repMatch);
+  const shown = repSort(repCache.filter(repMatch));
   if (!shown.length) {
     const e = document.createElement('div');
     e.className = 'empty-state';
@@ -448,9 +476,9 @@ function repRow(s) {
   item.className = 'song-item' + (editing ? ' editing' : '');
   item.innerHTML = `
     <div class="song-row">
-      <div class="song-main">
-        <div class="song-title">${esc(s.title)}</div>
-        <div class="song-artist">${esc(s.artist || '—')}</div>
+      <div class="song-cols">
+        <div class="song-title c-title">${esc(s.title)}</div>
+        <div class="song-artist c-artist">${esc(s.artist || '—')}</div>
       </div>
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
@@ -531,6 +559,19 @@ $('repFilter').addEventListener('input', () => {
   repFilterTerm = $('repFilter').value;
   if (!repEditingId) renderRepertoire();
 });
+$('repSortBar').querySelectorAll('.sort-btn').forEach(btn => btn.addEventListener('click', () => {
+  const k = btn.dataset.sort;
+  if (repSortKey === k) repSortDir *= -1; else { repSortKey = k; repSortDir = 1; }
+  updateRepSortUI();
+  if (!repEditingId) renderRepertoire();
+}));
+function updateRepSortUI() {
+  $('repSortBar').querySelectorAll('.sort-btn').forEach(b => {
+    const on = b.dataset.sort === repSortKey;
+    b.classList.toggle('active', on);
+    b.querySelector('.ar').textContent = on ? (repSortDir === 1 ? '▲' : '▼') : '';
+  });
+}
 
 // ── Add from library ──
 $('fromLibBtn').addEventListener('click', async () => {

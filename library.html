@@ -111,6 +111,17 @@
   }
   .filter-clear:hover { color: var(--rust); }
 
+  /* ── Sort bar + columns ── */
+  .sort-bar { display: flex; align-items: center; gap: 8px; max-width: 620px; margin: 0 auto 24px; flex-wrap: wrap; }
+  .sort-lbl { font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); }
+  .sort-btn { background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; font-family: 'Special Elite', cursive; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--faded); padding: 5px 12px; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+  .sort-btn:hover { border-color: var(--rust); color: var(--rust); }
+  .sort-btn.active { background: rgba(139,58,26,0.12); border-color: var(--rust); color: var(--rust); }
+  .sort-btn .ar { font-size: 0.85em; }
+  .song-cols { display: flex; flex: 1; min-width: 0; gap: 12px; align-items: baseline; }
+  .c-title { flex: 1.6 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .c-artist { flex: 1.1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   /* ── Inline edit ── */
   .song-item { display: flex; flex-direction: column; }
   .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
@@ -314,6 +325,13 @@
     <button class="filter-clear" id="libFilterClear" title="Clear" style="display:none">✕</button>
   </div>
 
+  <div class="sort-bar">
+    <span class="sort-lbl">Sort</span>
+    <button class="sort-btn active" data-sort="title">Song <span class="ar">▲</span></button>
+    <button class="sort-btn" data-sort="artist">Artist <span class="ar"></span></button>
+    <button class="sort-btn" data-sort="key">Key <span class="ar"></span></button>
+  </div>
+
   <!-- Learning -->
   <div class="lib-section">
     <div class="section-head">
@@ -381,6 +399,8 @@ let songsUnsub  = null;
 let songsCache  = [];
 let editingId   = null;   // row currently open for inline editing (suppresses re-render)
 let filterTerm  = '';     // library filter text
+let sortKey     = 'title';
+let sortDir     = 1;      // 1 = asc, -1 = desc
 
 // ── Utilities ──
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -453,9 +473,18 @@ function libMatch(s) {
   const q = filterTerm.trim().toLowerCase();
   return !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
 }
+function sortSongs(arr) {
+  return [...arr].sort((a, b) => {
+    const av = (a[sortKey] || '').toLowerCase(), bv = (b[sortKey] || '').toLowerCase();
+    if (!av && bv) return 1; if (av && !bv) return -1;   // blanks sink to the bottom
+    if (av < bv) return -1 * sortDir; if (av > bv) return 1 * sortDir;
+    const at = (a.title || '').toLowerCase(), bt = (b.title || '').toLowerCase();  // tiebreak on title
+    return at < bt ? -1 : at > bt ? 1 : 0;
+  });
+}
 function renderLibrary() {
-  const learning = songsCache.filter(s => s.status !== 'learned' && libMatch(s));
-  const learned  = songsCache.filter(s => s.status === 'learned' && libMatch(s));
+  const learning = sortSongs(songsCache.filter(s => s.status !== 'learned' && libMatch(s)));
+  const learned  = sortSongs(songsCache.filter(s => s.status === 'learned' && libMatch(s)));
   renderSection('learningList', 'learningCount', learning, true);
   renderSection('learnedList', 'learnedCount', learned, false);
 }
@@ -495,9 +524,9 @@ function songRow(s) {
   item.innerHTML = `
     <div class="song-row${s.status === 'learned' ? ' done' : ''}">
       <button class="learn-toggle ${s.status === 'learned' ? 'done' : ''}" title="Mark as ${s.status === 'learned' ? 'still learning' : 'known'}">${s.status === 'learned' ? '✓' : ''}</button>
-      <div class="song-main">
-        <div class="song-title">${esc(s.title)}</div>
-        <div class="song-artist">${esc(s.artist || '—')}</div>
+      <div class="song-cols">
+        <div class="song-title c-title">${esc(s.title)}</div>
+        <div class="song-artist c-artist">${esc(s.artist || '—')}</div>
       </div>
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
@@ -619,6 +648,21 @@ libFilterClear.addEventListener('click', () => {
   libFilter.value = ''; filterTerm = ''; libFilterClear.style.display = 'none';
   renderLibrary(); libFilter.focus();
 });
+
+// ── Sort ──
+document.querySelectorAll('.sort-btn').forEach(btn => btn.addEventListener('click', () => {
+  const k = btn.dataset.sort;
+  if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1; }
+  updateSortUI();
+  if (!editingId) renderLibrary();
+}));
+function updateSortUI() {
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    const on = b.dataset.sort === sortKey;
+    b.classList.toggle('active', on);
+    b.querySelector('.ar').textContent = on ? (sortDir === 1 ? '▲' : '▼') : '';
+  });
+}
 
 async function runSearch(term) {
   try {
