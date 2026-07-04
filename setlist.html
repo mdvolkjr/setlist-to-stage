@@ -62,6 +62,10 @@
   .pick-main { flex: 1; min-width: 0; }
   .pick-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.86rem; }
   .pick-artist { font-size: 0.72rem; color: var(--faded); font-style: italic; }
+  .picker-new { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-top: 1px solid var(--line); background: rgba(74,46,26,0.06); }
+  .picker-new input { flex: 1 1 120px; min-width: 0; background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; }
+  .picker-new input:focus { border-color: var(--rust); background: #fff; }
+  .picker-new-hint { padding: 6px 12px 10px; font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.72rem; color: var(--faded); }
 
   /* Sets */
   .set-block { background: var(--parchment); border: 1px solid var(--tan); border-radius: 4px; margin-bottom: 20px; overflow: hidden; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
@@ -84,6 +88,8 @@
   .sl-move button:hover { background: var(--tan); color: var(--brown); }
   .sl-play { width: 26px; height: 26px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-decoration: none; background: rgba(139,58,26,0.12); color: var(--rust); flex-shrink: 0; }
   .sl-play:hover { background: var(--rust); color: #fff; }
+  .sl-search { background: rgba(200,169,122,0.18) !important; color: var(--faded) !important; font-size: 11px; }
+  .sl-search:hover { background: var(--brown) !important; color: #fff !important; }
   .sl-setsel { flex-shrink: 0; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; font-family: 'Special Elite', cursive; font-size: 0.62rem; color: var(--ink); padding: 3px; max-width: 74px; }
   .sl-rm { width: 26px; height: 26px; border-radius: 3px; border: 1px solid rgba(139,58,26,0.2); background: rgba(139,58,26,0.1); color: var(--rust); cursor: pointer; font-size: 12px; flex-shrink: 0; }
   .sl-rm:hover { background: var(--rust); color: #fff; }
@@ -208,6 +214,13 @@
         <select id="targetSet"></select>
       </div>
       <div class="picker-list" id="pickList"></div>
+      <div class="picker-new">
+        <span class="picker-label">New</span>
+        <input type="text" id="newSongTitle" placeholder="Song not in the list? Title…" autocomplete="off">
+        <input type="text" id="newSongArtist" placeholder="Artist (optional)" autocomplete="off">
+        <button class="btn sm" id="newSongAdd">＋ Add new</button>
+      </div>
+      <div class="picker-new-hint">Adds it to this setlist, the band's Song List, and your personal Library.</div>
     </div>
   </div>
 
@@ -249,7 +262,7 @@
 <script type="module">
 import { auth, db } from './firebase-init.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, getDocs, updateDoc, collection, serverTimestamp }
+import { doc, getDoc, getDocs, updateDoc, addDoc, collection, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ytIdFromUrl, ytIdsFromSongs, buildYouTubePlaylistUrl, buildM3U, orderedListText }
   from './lib/playlist.js';
@@ -268,7 +281,8 @@ let saveTimer = null;
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1600); }
 function setlistDoc() { return doc(db, 'bands', bandId, 'setlists', setlistId); }
-function ytLink(s) { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function ytSearch(s) { return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
+function ytLink(s) { return s.youtube || ytSearch(s); }
 
 onAuthStateChanged(auth, async u => {
   user = u;
@@ -383,7 +397,8 @@ function songRow(sid, si, pos) {
       <div class="sl-song-artist">${s ? esc(s.artist || '') : ''}</div>
     </div>
     ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
-    ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="Play">▶</a>` : ''}
+    ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Play saved video' : 'Search YouTube'}">▶</a>` : ''}
+    ${s ? `<a class="sl-play sl-search" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube">🔍</a>` : ''}
     ${setlist.sets.length > 1 ? `<select class="sl-setsel" title="Move to set">${setOptions}</select>` : ''}
     <button class="sl-rm" title="Remove from setlist">✕</button>`;
 
@@ -451,6 +466,60 @@ function renderPicker(term) {
     });
     list.appendChild(row);
   });
+}
+
+// ── Add a brand-new song (cascade: setlist → band Song List → your Library) ──
+let libraryCache = null;
+async function ensureLibrary() {
+  if (libraryCache) return libraryCache;
+  try { const snap = await getDocs(collection(db, 'users', user.uid, 'songs')); libraryCache = snap.docs.map(d => ({ id: d.id, ...d.data() })); }
+  catch { libraryCache = []; }
+  return libraryCache;
+}
+const sameSong = (a, b) => (a.title || '').toLowerCase() === (b.title || '').toLowerCase()
+  && (a.artist || '').toLowerCase() === (b.artist || '').toLowerCase();
+
+$('newSongAdd').addEventListener('click', addNewSong);
+$('newSongTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('newSongArtist').focus(); });
+$('newSongArtist').addEventListener('keydown', e => { if (e.key === 'Enter') addNewSong(); });
+
+async function addNewSong() {
+  const title = $('newSongTitle').value.trim();
+  if (!title) { toast('Enter a song title'); $('newSongTitle').focus(); return; }
+  const artist = $('newSongArtist').value.trim();
+  const target = parseInt($('targetSet').value) || 0;
+  const btn = $('newSongAdd'); btn.disabled = true;
+  try {
+    // 1) Band Song List (repertoire) — reuse if the same song already exists
+    let repId = (Object.values(songMap).find(s => sameSong(s, { title, artist })) || {}).id;
+    if (!repId) {
+      const ref = await addDoc(collection(db, 'bands', bandId, 'repertoire'), {
+        title, artist, key: '', youtube: '', spotify: '', apple: '', addedBy: user.uid,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      repId = ref.id;
+      songMap[repId] = { id: repId, title, artist, key: '', youtube: '', spotify: '', apple: '' };
+    }
+    // 2) Personal Library — add unless it's already there
+    const lib = await ensureLibrary();
+    if (!lib.some(s => sameSong(s, { title, artist }))) {
+      const libRef = await addDoc(collection(db, 'users', user.uid, 'songs'), {
+        title, artist, key: '', status: 'learning',
+        youtube: '', spotify: '', apple: '', songsterr: '', ug: '', tab1: '', tab2: '',
+        tempo: '', structure: '', tricky: '', notes: '', artwork: '',
+        mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      lib.push({ id: libRef.id, title, artist });
+    }
+    // 3) Add to this setlist's chosen set
+    setlist.sets[target].songIds.push(repId);
+    saveSets(); render();
+    $('newSongTitle').value = ''; $('newSongArtist').value = '';
+    $('newSongTitle').focus();
+    toast('Added to setlist, Song List & your Library');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
+  finally { btn.disabled = false; }
 }
 
 // ── Stage view ──

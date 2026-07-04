@@ -154,8 +154,11 @@
             <div class="video-placeholder" id="ytPlaceholder"><div class="play-icon">▶</div><span>No YouTube URL saved</span></div>
           </div>
           <div class="vid-url-row" style="margin-top:10px">
-            <input class="text-input" id="ytInput" type="url" placeholder="https://youtube.com/watch?v=…" style="font-size:0.75rem;padding:6px 8px;">
+            <input class="text-input" id="ytInput" type="url" placeholder="https://youtube.com/watch?v=… (or paste a video id)" style="font-size:0.75rem;padding:6px 8px;">
             <button onclick="loadYT()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:'Special Elite',cursive;font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+          </div>
+          <div style="margin-top:7px">
+            <a id="ytSearchLink" href="#" target="_blank" style="font-family:'Special Elite',cursive;font-size:0.68rem;letter-spacing:0.06em;color:var(--rust);text-decoration:none;">🔍 Search YouTube for this song →</a>
           </div>
         </div>
       </div>
@@ -350,8 +353,17 @@ function wireLink(inputEl, btnEl) {
 
 // ── YouTube embed ──
 function ytIdFromUrl(url) {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  if (!url) return null;
+  const s = String(url).trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;   // bare video id
+  const m = s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
+}
+function updateYtSearch() {
+  const el = document.getElementById('ytSearchLink');
+  if (!el || !song) return;
+  const artist = ($('artistInput').value || song.artist || '').trim();
+  el.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${song.title || ''} ${artist}`.trim());
 }
 window.loadYT = function () {
   const url = $('ytInput').value.trim();
@@ -554,6 +566,9 @@ function populate() {
   wireLink($('ssTabInput'), $('ssTabGo'));
   wireLink($('tab1Input'), $('tab1Go'));
   wireLink($('tab2Input'), $('tab2Go'));
+
+  updateYtSearch();
+  $('artistInput').addEventListener('input', updateYtSearch);
 
   // Auto-save on change
   document.querySelectorAll('#content input:not([type=file]):not([type=checkbox]), #content textarea').forEach(el => {
