@@ -119,6 +119,18 @@
   .icon-btn.edit:hover, .icon-btn.edit.on { background: var(--brown); color: var(--cream); }
   .lnk.search { opacity: 0.42; }
 
+  /* Pop quiz */
+  .quiz { position: fixed; inset: 0; z-index: 550; background: rgba(26,15,6,0.96); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .quiz.show { display: flex; }
+  .quiz-card { background: var(--parchment); border: 1px solid var(--tan); border-radius: 6px; padding: 30px 26px; max-width: 520px; width: 100%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+  .quiz-kicker { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded); margin-bottom: 12px; }
+  .quiz-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: clamp(1.6rem,4vw,2.4rem); line-height: 1.15; }
+  .quiz-reveal { min-height: 44px; margin: 14px 0 20px; color: var(--faded); }
+  .quiz-reveal .qr-artist { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.05rem; }
+  .quiz-reveal .qr-key { font-family: 'Special Elite', cursive; color: var(--rust); display: inline-block; margin-top: 6px; }
+  .quiz-reveal a { color: var(--rust); font-family: 'Special Elite', cursive; font-size: 0.85rem; }
+  .quiz-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
   /* Inline edit + filter */
   .rep-filter { margin-bottom: 12px; }
   .rep-filter input { width: 100%; }
@@ -218,6 +230,7 @@
         <div class="add-tools">
           <button class="btn" id="fromLibBtn">＋ From my Library</button>
           <button class="btn ghost" id="manualBtn">＋ Add manually</button>
+          <button class="btn ghost" id="quizBtn">🎲 Pop Quiz</button>
         </div>
 
         <!-- Library picker -->
@@ -261,6 +274,20 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Pop quiz -->
+<div class="quiz" id="quiz">
+  <div class="quiz-card">
+    <div class="quiz-kicker">Pop Quiz · random song drill</div>
+    <div class="quiz-title" id="quizTitle"></div>
+    <div class="quiz-reveal" id="quizReveal"></div>
+    <div class="quiz-nav">
+      <button class="btn ghost" id="quizRevealBtn">Reveal</button>
+      <button class="btn" id="quizNextBtn">Next 🎲</button>
+      <button class="btn ghost" id="quizCloseBtn">✕ Exit</button>
+    </div>
   </div>
 </div>
 
@@ -647,6 +674,37 @@ async function createSetlist() {
     $('setlistForm').classList.add('hidden');
     location.href = 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(ref.id);
   } catch (e) { toast('Could not create setlist: ' + (e.code || e.message)); }
+}
+
+// ── Pop quiz (recall drill over the band Song List) ──
+let quizCurrent = null;
+$('quizBtn').addEventListener('click', () => {
+  if (!repCache.length) { toast('Add songs to the song list first'); return; }
+  $('quiz').classList.add('show');
+  nextQuiz();
+});
+$('quizCloseBtn').addEventListener('click', () => $('quiz').classList.remove('show'));
+$('quizNextBtn').addEventListener('click', nextQuiz);
+$('quizRevealBtn').addEventListener('click', revealQuiz);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('quiz').classList.remove('show'); });
+
+function nextQuiz() {
+  let s = repCache[Math.floor(Math.random() * repCache.length)];
+  if (repCache.length > 1) { while (s === quizCurrent) s = repCache[Math.floor(Math.random() * repCache.length)]; }
+  quizCurrent = s;
+  $('quizTitle').textContent = s.title || 'Untitled';
+  $('quizReveal').innerHTML = '';
+  $('quizReveal').style.visibility = 'hidden';
+  $('quizRevealBtn').style.display = '';
+}
+function revealQuiz() {
+  const s = quizCurrent;
+  $('quizReveal').innerHTML = `
+    <div class="qr-artist">${esc(s.artist || 'Unknown artist')}</div>
+    ${s.key ? `<div class="qr-key">Key: ${esc(s.key)}</div>` : ''}
+    <div style="margin-top:8px"><a href="${esc(ytLink(s))}" target="_blank">▶ Play it</a></div>`;
+  $('quizReveal').style.visibility = 'visible';
+  $('quizRevealBtn').style.display = 'none';
 }
 </script>
 </body>

@@ -1,0 +1,9 @@
+{
+  "name": "setlist-to-stage",
+  "private": true,
+  "type": "module",
+  "description": "Musician setlist & practice manager (static Firebase app). package.json exists only so Node treats shared lib/*.js modules as ESM for unit tests; it is not deployed.",
+  "scripts": {
+    "test": "node tests/playlist.test.js"
+  }
+}
