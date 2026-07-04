@@ -197,6 +197,7 @@
       <button class="btn ghost" id="addSetBtn">＋ Add Set</button>
       <button class="btn ghost" id="practiceBtn">🎯 Practice</button>
       <button class="btn ghost" id="exportBtn">▶ Export</button>
+      <button class="btn ghost" id="notifyBtn">📣 Notify Bandmates</button>
     </div>
 
     <div class="export-panel" id="exportPanel">
@@ -521,6 +522,29 @@ async function addNewSong() {
   } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
   finally { btn.disabled = false; }
 }
+
+// ── Notify bandmates (share this setlist) ──
+function shareText() {
+  const lines = [`🎸 ${band.name || 'Band'} — ${setlist.name || 'Setlist'}${setlist.gigDate ? ` (${fmtDate(setlist.gigDate)})` : ''}`];
+  setlist.sets.forEach(set => {
+    lines.push('', (set.title || 'Set') + ':');
+    (set.songIds || []).forEach((sid, i) => {
+      const s = songMap[sid];
+      lines.push(`  ${i + 1}. ${s ? (s.title || 'Untitled') + (s.artist ? ` — ${s.artist}` : '') : '(removed)'}`);
+    });
+  });
+  return lines.join('\n');
+}
+$('notifyBtn').addEventListener('click', async () => {
+  const url = `${location.origin}/setlist.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(setlistId)}`;
+  const text = shareText();
+  if (navigator.share) {
+    try { await navigator.share({ title: `${band.name || 'Band'} setlist`, text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(text + '\n\n▶ Open & practice: ' + url); toast('Setlist copied — paste into a text or email to your band'); }
+  catch { prompt('Copy this and send to your band:', text + '\n\n' + url); }
+});
 
 // ── Stage view ──
 $('stageBtn').addEventListener('click', openStage);

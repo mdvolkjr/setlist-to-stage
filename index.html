@@ -123,6 +123,12 @@
     <span class="count" id="gigCount"></span>
   </div>
   <div class="gig-list" id="gigList"></div>
+
+  <div class="section-head" style="margin-top:32px">
+    <h2>🎵 Practice &amp; Standing Setlists</h2>
+    <span class="count" id="standingCount"></span>
+  </div>
+  <div class="gig-list" id="standingList"></div>
 </div>
 
 <script type="module">
@@ -186,22 +192,29 @@ async function loadDashboard(user) {
     const bands = bandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     $('bandSub').textContent = bands.length ? `${bands.length} band${bands.length===1?'':'s'}` : 'Create or join a band';
 
-    // Upcoming gigs across all bands
+    // Setlists across all bands → upcoming gigs (dated, future) + standing (undated)
     const today = todayStr();
     const gigs = [];
+    const standing = [];
     await Promise.all(bands.map(async b => {
       try {
         const slSnap = await getDocs(collection(db, 'bands', b.id, 'setlists'));
         slSnap.forEach(d => {
           const sl = d.data();
-          if (sl.gigDate && sl.gigDate >= today) {
-            gigs.push({ bandId: b.id, bandName: b.name || 'Band', id: d.id, name: sl.name || 'Setlist', gigDate: sl.gigDate });
-          }
+          const item = {
+            bandId: b.id, bandName: b.name || 'Band', id: d.id, name: sl.name || 'Setlist',
+            gigDate: sl.gigDate || '',
+            count: (sl.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0)
+          };
+          if (sl.gigDate && sl.gigDate >= today) gigs.push(item);
+          else if (!sl.gigDate) standing.push(item);
         });
       } catch {}
     }));
     gigs.sort((a, b) => a.gigDate.localeCompare(b.gigDate));
+    standing.sort((a, b) => (a.bandName + a.name).localeCompare(b.bandName + b.name));
     renderGigs(gigs);
+    renderStanding(standing);
   } catch (e) {
     $('gigList').innerHTML = `<div class="empty-state"><p>Couldn't load dashboard: ${esc(e.code || e.message)}</p></div>`;
   }
@@ -233,6 +246,28 @@ function renderGigs(gigs) {
         <span class="gig-badge ${days <= 14 ? 'soon' : 'later'}">${days === 0 ? 'Tonight!' : days + ' day' + (days===1?'':'s') + ' away'}</span>
       </div>
       <div class="gig-date">${esc(fmtDate(g.gigDate))}</div>`;
+    list.appendChild(a);
+  });
+}
+
+function renderStanding(items) {
+  $('standingCount').textContent = items.length ? `${items.length}` : '';
+  const list = $('standingList');
+  list.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">🎵</div><p>No standing setlists. Make a setlist <em>without</em> a gig date for the sets you play all the time —<br>name it something clear like “Standard 3-Hour” or “Acoustic Set” and it'll live here.</p></div>`;
+    return;
+  }
+  items.forEach(s => {
+    const a = document.createElement('a');
+    a.className = 'gig-card';
+    a.href = 'setlist.html?band=' + encodeURIComponent(s.bandId) + '&id=' + encodeURIComponent(s.id);
+    a.innerHTML = `
+      <div class="gig-when"><div class="gw-days" style="font-size:1.3rem">🎵</div><div class="gw-lbl">no date</div></div>
+      <div class="gig-main">
+        <div class="gig-name">${esc(s.name)}</div>
+        <div class="gig-meta">${esc(s.bandName)} · ${s.count} song${s.count === 1 ? '' : 's'}</div>
+      </div>`;
     list.appendChild(a);
   });
 }
