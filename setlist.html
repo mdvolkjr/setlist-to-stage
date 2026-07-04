@@ -164,17 +164,35 @@
   .pr-nav { display: flex; gap: 10px; justify-content: center; padding: 16px; border-top: 1px solid rgba(200,169,122,0.2); }
   .pr-nav .btn[disabled] { opacity: 0.35; cursor: default; }
 
-  /* Print — reuses the Stage View content */
+  /* Nickname + print controls */
+  .sl-nick { width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--line); background: rgba(74,46,26,0.06); color: var(--faded); cursor: pointer; font-size: 12px; flex-shrink: 0; }
+  .sl-nick.on { background: rgba(139,58,26,0.15); border-color: var(--rust); color: var(--rust); }
+  .sl-nick:hover { background: var(--brown); color: var(--cream); }
+  .print-panel { display: none; max-width: 620px; margin: 12px auto 0; padding: 12px 14px; background: var(--parchment); border: 1px solid var(--tan); border-radius: 4px; }
+  .print-panel.show { display: block; }
+  .pp-lbl { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faded); margin-bottom: 8px; }
+  .pp-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .pp-check { display: inline-flex; align-items: center; gap: 6px; font-family: 'Special Elite', cursive; font-size: 0.68rem; color: var(--faded); margin-right: 14px; cursor: pointer; }
+  .print-sheet { display: none; }
+
+  /* Print output — clean black-on-white paper */
   @media print {
+    @page { margin: 0.5in; }
     body { background: #fff !important; }
-    .topbar, .wrap, .toast, .practice, .stage-bar { display: none !important; }
-    .stage, .stage.show { position: static; display: block !important; background: #fff !important; color: #000 !important; }
-    .stage-inner { color: #000 !important; max-width: none; padding: 0 10px; }
-    .stage-set-title { color: #000 !important; border-color: #000 !important; break-after: avoid; }
-    .stage-song { color: #000 !important; border-color: #ccc !important; break-inside: avoid; }
-    .stage-song .ss-artist { color: #333 !important; }
-    .stage-song .ss-key { color: #000 !important; background: #eee !important; }
-    .stage-song a.ss-play { display: none !important; }
+    body > *:not(#printSheet) { display: none !important; }
+    #printSheet { display: block !important; }
+    .psheet { color: #000; font-family: 'Libre Baskerville', Georgia, serif; }
+    .ps-head { text-align: center; margin-bottom: 0.3in; }
+    .ps-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 20pt; }
+    .ps-sub { font-size: 11pt; color: #222; margin-top: 3pt; letter-spacing: 0.04em; }
+    .ps-set { text-align: center; font-family: 'Special Elite', cursive; font-size: 12pt; letter-spacing: 0.1em; text-transform: uppercase; margin: 0.2in 0 0.06in; color: #000; break-after: avoid; }
+    .ps-list { list-style: none; margin: 0; padding: 0; }
+    .ps-list li { break-inside: avoid; }
+    .psheet.classic .ps-list li { text-align: center; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 23pt; line-height: 1.55; text-transform: uppercase; letter-spacing: 0.02em; }
+    .psheet.classic .ps-artist, .psheet.classic .ps-key { display: none; }
+    .psheet.list .ps-list li { font-size: 14pt; line-height: 1.7; }
+    .psheet.list .ps-artist { color: #444; font-style: italic; font-size: 12pt; }
+    .psheet.list .ps-key { color: #000; font-family: 'Special Elite', cursive; font-size: 11pt; }
   }
 
   .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
@@ -213,6 +231,17 @@
       <button class="btn ghost" id="exportBtn">▶ Export</button>
       <button class="btn ghost" id="notifyBtn">📣 Notify Bandmates</button>
       <button class="btn ghost" id="dupBtn">⧉ Duplicate</button>
+      <button class="btn ghost" id="printBtn">🖨 Print</button>
+    </div>
+
+    <div class="print-panel" id="printPanel">
+      <div class="pp-lbl">Choose a printout — goes on white paper, black text</div>
+      <div class="pp-row">
+        <button class="btn sm" id="printClassic">🎤 Stage — big centered names</button>
+        <button class="btn sm ghost" id="printList">📋 List — titles</button>
+      </div>
+      <label class="pp-check"><input type="checkbox" id="printArtist"> Include artist (List)</label>
+      <label class="pp-check"><input type="checkbox" id="printKey"> Include key (List)</label>
     </div>
 
     <div class="export-panel" id="exportPanel">
@@ -276,6 +305,8 @@
   </div>
 </div>
 
+<div class="print-sheet" id="printSheet" aria-hidden="true"></div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -302,6 +333,25 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 function setlistDoc() { return doc(db, 'bands', bandId, 'setlists', setlistId); }
 function ytSearch(s) { return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
 function ytLink(s) { return s.youtube || ytSearch(s); }
+// Display name for a song in THIS setlist — a stage nickname if set, else the real title.
+function displayName(sid) {
+  const nick = setlist.nicks && setlist.nicks[sid];
+  if (nick) return nick;
+  const s = songMap[sid];
+  return s ? (s.title || 'Untitled') : 'Removed';
+}
+function saveNicks() {
+  updateDoc(setlistDoc(), { nicks: setlist.nicks, updatedAt: serverTimestamp() }).catch(e => toast('Save failed: ' + (e.code || e.message)));
+}
+function editNick(sid) {
+  const s = songMap[sid];
+  const cur = (setlist.nicks && setlist.nicks[sid]) || '';
+  const nn = prompt(`Stage name for "${s ? s.title : 'this song'}" on the setlist\n(blank = use the real title):`, cur);
+  if (nn === null) return;
+  const v = nn.trim();
+  if (v) setlist.nicks[sid] = v; else delete setlist.nicks[sid];
+  saveNicks(); render();
+}
 
 onAuthStateChanged(auth, async u => {
   user = u;
@@ -323,6 +373,7 @@ async function load() {
     band = bandSnap.data();
     setlist = slSnap.data();
     if (!Array.isArray(setlist.sets) || !setlist.sets.length) setlist.sets = [{ title: 'Set 1', songIds: [] }];
+    if (!setlist.nicks || typeof setlist.nicks !== 'object') setlist.nicks = {};
     songMap = {};
     repSnap.docs.forEach(d => { songMap[d.id] = { id: d.id, ...d.data() }; });
   } catch (e) {
@@ -445,6 +496,7 @@ function setBlock(set, si) {
 
 function songRow(sid, si, pos) {
   const s = songMap[sid];
+  const nick = setlist.nicks && setlist.nicks[sid];
   const row = document.createElement('div');
   row.className = 'sl-song';
   const total = setlist.sets[si].songIds.length;
@@ -457,18 +509,20 @@ function songRow(sid, si, pos) {
       <button class="mv-dn" title="Move down" ${pos === total - 1 ? 'disabled style="opacity:.3;cursor:default"' : ''}>▼</button>
     </div>
     <div class="sl-song-main">
-      <div class="sl-song-title ${s ? '' : 'missing'}">${s ? esc(s.title) : 'Removed from song list'}</div>
-      <div class="sl-song-artist">${s ? esc(s.artist || '') : ''}</div>
+      <div class="sl-song-title ${s ? '' : 'missing'}">${s || nick ? esc(displayName(sid)) : 'Removed from song list'}</div>
+      <div class="sl-song-artist">${nick ? esc((s ? s.title : '') + (s && s.artist ? ' · ' + s.artist : '')) : (s ? esc(s.artist || '') : '')}</div>
     </div>
     ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
     ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Play saved video' : 'Search YouTube'}">▶</a>` : ''}
     ${s ? `<a class="sl-play sl-search" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube">🔍</a>` : ''}
+    <button class="sl-nick ${nick ? 'on' : ''}" title="Stage name (nickname) for this song">🏷</button>
     ${setlist.sets.length > 1 ? `<select class="sl-setsel" title="Move to set">${setOptions}</select>` : ''}
     <button class="sl-rm" title="Remove from setlist">✕</button>`;
 
   row.querySelector('.mv-up').addEventListener('click', () => { if (pos > 0) { moveWithin(si, pos, pos - 1); } });
   row.querySelector('.mv-dn').addEventListener('click', () => { if (pos < total - 1) { moveWithin(si, pos, pos + 1); } });
   row.querySelector('.sl-rm').addEventListener('click', () => { setlist.sets[si].songIds.splice(pos, 1); saveSets(); render(); });
+  row.querySelector('.sl-nick').addEventListener('click', () => editNick(sid));
   const sel = row.querySelector('.sl-setsel');
   if (sel) sel.addEventListener('change', () => {
     const target = parseInt(sel.value);
@@ -671,7 +725,7 @@ function shareText() {
     lines.push('', (set.title || 'Set') + ':');
     (set.songIds || []).forEach((sid, i) => {
       const s = songMap[sid];
-      lines.push(`  ${i + 1}. ${s ? (s.title || 'Untitled') + (s.artist ? ` — ${s.artist}` : '') : '(removed)'}`);
+      lines.push(`  ${i + 1}. ${displayName(sid)}${s && s.artist ? ` — ${s.artist}` : ''}`);
     });
   });
   return lines.join('\n');
@@ -718,7 +772,7 @@ function openStage() {
       row.className = 'stage-song';
       row.innerHTML = `
         <span class="ss-num">${i + 1}</span>
-        <span class="ss-title">${s ? esc(s.title) : '<span style="opacity:.5">removed</span>'} ${s && s.artist ? `<span class="ss-artist">— ${esc(s.artist)}</span>` : ''}</span>
+        <span class="ss-title">${esc(displayName(sid))} ${s && s.artist ? `<span class="ss-artist">— ${esc(s.artist)}</span>` : ''}</span>
         ${s && s.key ? `<span class="ss-key">${esc(s.key)}</span>` : ''}
         ${s ? `<a class="ss-play" href="${esc(ytLink(s))}" target="_blank">▶</a>` : ''}`;
       inner.appendChild(row);
@@ -732,7 +786,38 @@ document.querySelectorAll('.size-btn').forEach(b => b.addEventListener('click', 
   $('stageInner').className = 'stage-inner size-' + b.dataset.size;
   document.querySelectorAll('.size-btn').forEach(x => x.classList.toggle('active', x === b));
 }));
-$('stagePrint').addEventListener('click', () => window.print());
+$('stagePrint').addEventListener('click', () => printNow('classic'));
+
+// ── Printable setlist versions ──
+$('printBtn').addEventListener('click', () => $('printPanel').classList.toggle('show'));
+$('printClassic').addEventListener('click', () => printNow('classic'));
+$('printList').addEventListener('click', () => printNow('list'));
+
+function buildPrintSheet(format) {
+  const showArtist = $('printArtist').checked;
+  const showKey = $('printKey').checked;
+  const dateStr = setlist.gigDate ? fmtDate(setlist.gigDate) : '';
+  const subParts = [band.name || '', dateStr].filter(Boolean).map(esc);
+  let html = `<div class="psheet ${format}">`;
+  html += `<div class="ps-head"><div class="ps-title">${esc(setlist.name || 'Setlist')}</div>${subParts.length ? `<div class="ps-sub">${subParts.join(' · ')}</div>` : ''}</div>`;
+  setlist.sets.forEach((set, si) => {
+    if (setlist.sets.length > 1) html += `<div class="ps-set">${esc(set.title || ('Set ' + (si + 1)))}</div>`;
+    html += '<ul class="ps-list">';
+    (set.songIds || []).forEach(sid => {
+      const s = songMap[sid];
+      let line = esc(displayName(sid));
+      if (format === 'list') {
+        if (showArtist && s && s.artist) line += ` <span class="ps-artist">— ${esc(s.artist)}</span>`;
+        if (showKey && s && s.key) line += ` <span class="ps-key">(${esc(s.key)})</span>`;
+      }
+      html += `<li>${line}</li>`;
+    });
+    html += '</ul>';
+  });
+  html += '</div>';
+  $('printSheet').innerHTML = html;
+}
+function printNow(format) { buildPrintSheet(format); window.print(); }
 
 // ── Flatten helpers ──
 function flatSongIds() {
@@ -784,7 +869,7 @@ $('prNext').addEventListener('click', () => { if (prIdx < prQueue.length - 1) { 
 function startPractice() {
   const checked = [...document.querySelectorAll('.pr-check:checked')].map(c => c.dataset.sid);
   const ids = checked.length ? checked : flatSongIds();
-  prQueue = ids.map(sid => songMap[sid]).filter(Boolean);
+  prQueue = ids.filter(sid => songMap[sid]);   // keep sids so nicknames apply
   if (!prQueue.length) { toast('Add songs to the setlist first'); return; }
   prIdx = 0;
   $('practice').classList.add('show');
@@ -793,13 +878,15 @@ function startPractice() {
 function closePractice() { $('practice').classList.remove('show'); $('prStage').innerHTML = ''; } // clearing stops the iframe
 
 function renderPractice() {
-  const s = prQueue[prIdx];
+  const sid = prQueue[prIdx];
+  const s = songMap[sid] || {};
+  const nick = setlist.nicks && setlist.nicks[sid];
   $('prProgress').textContent = `Practicing · ${prIdx + 1} / ${prQueue.length}`;
   const id = ytIdFromUrl(s.youtube);
   $('prStage').innerHTML = `
     <div class="pr-song">
-      <div class="pr-title">${esc(s.title || 'Untitled')}</div>
-      <div class="pr-sub">${esc(s.artist || '')}${s.key ? ` · <span class="pr-key">Key ${esc(s.key)}</span>` : ''}</div>
+      <div class="pr-title">${esc(displayName(sid))}</div>
+      <div class="pr-sub">${nick && s.title ? esc(s.title) + ' · ' : ''}${esc(s.artist || '')}${s.key ? ` · <span class="pr-key">Key ${esc(s.key)}</span>` : ''}</div>
       ${id
         ? `<div class="pr-video"><iframe src="https://www.youtube.com/embed/${id}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`
         : `<a class="btn" href="${esc(ytLink(s))}" target="_blank">▶ Find on YouTube</a>`}
