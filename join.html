@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join a Band — The Setlist Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --cream:#f5efe0; --parchment:#e8dcc8; --brown:#4a2e1a; --rust:#8b3a1a; --tan:#c8a97a; --ink:#2a1a0e; --faded:#7a6248; --line:#c4b08a; --green:#3a6b3a; }
+  body { background: linear-gradient(135deg, var(--brown), #2a1707); font-family: 'Libre Baskerville', Georgia, serif; color: var(--cream); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  .card { max-width: 460px; width: 100%; }
+  .ornament { color: var(--tan); font-size: 1.4rem; letter-spacing: 0.4em; margin-bottom: 14px; }
+  h1 { font-family: 'Special Elite', cursive; font-size: 2rem; letter-spacing: 0.03em; }
+  .sub { color: var(--tan); font-family: 'Playfair Display', serif; font-style: italic; margin: 10px 0 26px; }
+  .band-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.6rem; color: var(--cream); margin: 6px 0 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; background: var(--rust); color: var(--cream); border: none; border-radius: 4px; padding: 13px 26px; font-family: 'Special Elite', cursive; font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s, background 0.15s; text-decoration: none; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
+  .btn:hover { transform: scale(1.03); background: #a04020; }
+  .google-btn { background: var(--cream); color: var(--ink); }
+  .google-btn svg { width: 20px; height: 20px; }
+  .muted { color: var(--tan); font-size: 0.8rem; margin-top: 18px; }
+  .muted a { color: var(--cream); }
+  .err { color: #f0b0a0; font-family: 'Special Elite', cursive; font-size: 0.85rem; }
+  .spin { color: var(--tan); font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="ornament">✦ ✦ ✦</div>
+  <h1>The Setlist Book</h1>
+  <div id="body"><div class="spin">Loading…</div></div>
+</div>
+
+<script type="module">
+import { auth, db, googleProvider } from './firebase-init.js';
+import { onAuthStateChanged, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, updateDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const params = new URLSearchParams(location.search);
+const bandId = params.get('band') || '';
+const body = document.getElementById('body');
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const GOOGLE_SVG = '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+
+if (!bandId) body.innerHTML = '<div class="err">This invite link is missing a band. Ask for a fresh link.</div>';
+
+onAuthStateChanged(auth, async user => {
+  if (!bandId) return;
+  if (!user) {
+    body.innerHTML = `<div class="sub">You've been invited to join a band.</div>
+      <button class="btn google-btn" id="signinBtn">${GOOGLE_SVG} Sign in with Google to join</button>`;
+    document.getElementById('signinBtn').addEventListener('click', async () => {
+      try { await signInWithPopup(auth, googleProvider); }
+      catch (e) { body.innerHTML = `<div class="err">Sign-in failed: ${esc(e.code || e.message)}</div>`; }
+    });
+    return;
+  }
+  // Signed in — look up the band
+  body.innerHTML = '<div class="spin">Finding the band…</div>';
+  let band;
+  try {
+    const snap = await getDoc(doc(db, 'bands', bandId));
+    if (!snap.exists()) { body.innerHTML = '<div class="err">That band no longer exists.</div>'; return; }
+    band = snap.data();
+  } catch (e) { body.innerHTML = `<div class="err">Couldn't open the invite: ${esc(e.code || e.message)}</div>`; return; }
+
+  const goBand = () => { location.href = 'band.html?id=' + encodeURIComponent(bandId); };
+  if (band.memberUids && band.memberUids.includes(user.uid)) {
+    body.innerHTML = `<div class="band-name">${esc(band.name || 'this band')}</div>
+      <div class="sub">You're already in this band.</div>
+      <button class="btn" id="goBtn">Open the band →</button>`;
+    document.getElementById('goBtn').addEventListener('click', goBand);
+    return;
+  }
+
+  body.innerHTML = `<div class="sub">Join</div>
+    <div class="band-name">${esc(band.name || 'this band')}</div>
+    ${band.description ? `<div class="sub">${esc(band.description)}</div>` : '<div style="height:14px"></div>'}
+    <button class="btn" id="joinBtn">🎸 Join this band</button>
+    <div class="muted">You'll get its full Song List and every setlist.</div>`;
+  document.getElementById('joinBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true; btn.textContent = 'Joining…';
+    try {
+      await updateDoc(doc(db, 'bands', bandId), {
+        memberUids: arrayUnion(user.uid),
+        [`members.${user.uid}`]: { name: user.displayName || user.email || 'Member', role: '' },
+        updatedAt: serverTimestamp()
+      });
+      goBand();
+    } catch (e) {
+      body.innerHTML = `<div class="err">Couldn't join: ${esc(e.code || e.message)}</div>
+        <div class="muted"><a href="bands.html">Go to your bands</a></div>`;
+    }
+  });
+});
+</script>
+</body>
+</html>

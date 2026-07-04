@@ -216,11 +216,17 @@
       <div class="panel-body settings-body" id="settingsBody">
         <label class="field-label">Members</label>
         <div class="members-row" id="membersRow"></div>
-        <div class="add-member">
-          <input class="text-input" id="newMemberId" type="text" placeholder="Add a bandmate — paste their Member ID (from their Profile)" autocomplete="off">
-          <button class="btn" id="addMemberBtn">＋ Add</button>
+        <div class="add-member" style="margin-bottom:8px">
+          <button class="btn" id="copyInviteBtn">🔗 Copy invite link</button>
         </div>
-        <div class="share-hint">Bandmates share this band's Song List and setlists. Ask them for their <strong>Member ID</strong> (shown on their Profile page) and paste it above. They'll need to sign in once first.</div>
+        <div class="share-hint">Easiest way to add someone: send them the <strong>invite link</strong>. They open it, sign in with Google, and click <em>Join</em> — instantly sharing this band's Song List and every setlist. Any member's edits (setlists, keys, links) are seen by everyone.</div>
+        <details style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-family:'Special Elite',cursive;font-size:0.66rem;letter-spacing:0.06em;color:var(--faded);">Or add by Member ID</summary>
+          <div class="add-member" style="margin-top:8px">
+            <input class="text-input" id="newMemberId" type="text" placeholder="Paste their Member ID (from their Profile)" autocomplete="off">
+            <button class="btn" id="addMemberBtn">＋ Add</button>
+          </div>
+        </details>
         <div class="settings-grid">
           <div><label class="field-label">Band Name</label><input class="text-input" id="setName" type="text" maxlength="80"></div>
           <div><label class="field-label">Your Role</label><input class="text-input" id="setRole" type="text" maxlength="80" placeholder="e.g. Lead guitar"></div>
@@ -638,7 +644,14 @@ $('deleteBandBtn').addEventListener('click', async () => {
   catch (e) { toast('Delete failed: ' + (e.code || e.message)); }
 });
 
-// ── Add member (share the band) ──
+// ── Share the band ──
+$('copyInviteBtn').addEventListener('click', async () => {
+  const link = `${location.origin}/join.html?band=${encodeURIComponent(bandId)}`;
+  try { await navigator.clipboard.writeText(link); toast('Invite link copied — send it to a bandmate'); }
+  catch { prompt('Copy this invite link and send it to a bandmate:', link); }
+});
+
+// ── Add member by ID (fallback) ──
 $('addMemberBtn').addEventListener('click', addMember);
 $('newMemberId').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
 async function addMember() {
