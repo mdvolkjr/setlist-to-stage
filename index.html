@@ -3,265 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Setlist Book — My Library</title>
+<title>The Setlist Book — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
-    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
-    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
-  }
-  body {
-    background-color: var(--cream);
-    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
-    font-family: 'Libre Baskerville', Georgia, serif;
-    color: var(--ink); min-height: 100vh;
-  }
+  :root { --cream:#f5efe0; --parchment:#e8dcc8; --brown:#4a2e1a; --rust:#8b3a1a; --tan:#c8a97a; --ink:#2a1a0e; --faded:#7a6248; --line:#c4b08a; --green:#3a6b3a; }
+  body { background-color: var(--cream); background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px); font-family: 'Libre Baskerville', Georgia, serif; color: var(--ink); min-height: 100vh; }
 
-  /* ── Top bar ── */
-  .topbar {
-    background: var(--brown); padding: 12px 22px;
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
+  .topbar { background: var(--brown); padding: 12px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
   .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
   .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
   .topbar-spacer { flex: 1; }
-
-  /* ── Primary nav ── */
   .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  .navlink {
-    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
-    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
-    display: inline-flex; align-items: center; gap: 6px;
-    transition: background 0.15s, color 0.15s;
-  }
+  .navlink { font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em; color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; }
   .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
-  .navlink.active {
-    background: rgba(139,58,26,0.45); color: var(--cream);
-    box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3);
-  }
+  .navlink.active { background: rgba(139,58,26,0.45); color: var(--cream); box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3); }
   .user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 8px 3px 3px; border-radius: 20px; transition: background 0.15s; }
   .user-chip:hover { background: rgba(255,255,255,0.09); }
   .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
   .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
-  .btn {
-    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
-    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
-    padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
+  .btn { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em; background: var(--rust); color: var(--cream); border: none; border-radius: 3px; padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
   .btn:hover { background: #a04020; }
   .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
   .btn.ghost:hover { background: rgba(255,255,255,0.15); }
 
-  /* ── Sign-in screen ── */
-  .signin-screen {
-    display: none; position: fixed; inset: 0; z-index: 200;
-    background: linear-gradient(135deg, var(--brown), #2a1707);
-    align-items: center; justify-content: center; text-align: center; padding: 24px;
-  }
+  /* Sign-in */
+  .signin-screen { display: none; position: fixed; inset: 0; z-index: 200; background: linear-gradient(135deg, var(--brown), #2a1707); align-items: center; justify-content: center; text-align: center; padding: 24px; }
   .signin-screen.show { display: flex; }
   .signin-card { max-width: 420px; }
   .signin-card .ornament { color: var(--tan); font-size: 1.4rem; letter-spacing: 0.4em; margin-bottom: 14px; }
   .signin-card h1 { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 2.2rem; letter-spacing: 0.03em; }
   .signin-card p { color: var(--tan); font-family: 'Playfair Display', serif; font-style: italic; margin: 12px 0 30px; }
-  .google-btn {
-    display: inline-flex; align-items: center; gap: 12px; cursor: pointer;
-    background: var(--cream); color: var(--ink); border: none; border-radius: 4px;
-    padding: 13px 24px; font-family: 'Special Elite', cursive; font-size: 0.9rem;
-    letter-spacing: 0.05em; transition: transform 0.12s, box-shadow 0.15s;
-    box-shadow: 2px 3px 12px rgba(0,0,0,0.35);
-  }
+  .google-btn { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; background: var(--cream); color: var(--ink); border: none; border-radius: 4px; padding: 13px 24px; font-family: 'Special Elite', cursive; font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
   .google-btn:hover { transform: scale(1.03); }
   .google-btn svg { width: 20px; height: 20px; }
 
-  /* ── Main ── */
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 34px 18px 90px; }
-  header.page-head { text-align: center; margin-bottom: 30px; }
-  header.page-head .ornament { color: var(--tan); font-size: 1.1rem; letter-spacing: 0.3em; margin-bottom: 6px; }
-  header.page-head h1 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: clamp(1.8rem,4vw,2.8rem); letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
-  header.page-head .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); margin-top: 5px; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 36px 18px 90px; }
+  .greeting { text-align: center; margin-bottom: 30px; }
+  .greeting .ornament { color: var(--tan); font-size: 1.1rem; letter-spacing: 0.3em; margin-bottom: 6px; }
+  .greeting h1 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: clamp(1.8rem,4vw,2.8rem); letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+  .greeting .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); margin-top: 5px; }
 
-  /* ── Add / search bar ── */
-  .add-bar { position: relative; max-width: 620px; margin: 0 auto 14px; }
-  .add-bar-input-row { display: flex; gap: 8px; }
-  .add-bar input {
-    flex: 1; background: var(--parchment); border: 1px solid var(--tan);
-    border-radius: 4px; padding: 12px 14px; font-family: 'Libre Baskerville', serif;
-    font-size: 0.9rem; color: var(--ink); outline: none;
-  }
-  .add-bar input:focus { border-color: var(--rust); background: #fff; }
-  .add-bar input::placeholder { color: var(--tan); font-style: italic; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 34px; }
+  .tile { display: block; text-decoration: none; background: var(--parchment); border: 1px solid var(--tan); border-radius: 5px; padding: 22px 20px; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); transition: transform 0.12s, box-shadow 0.15s; }
+  .tile:hover { transform: translateY(-3px); box-shadow: 3px 6px 18px rgba(74,46,26,0.2); }
+  .tile .t-icon { font-size: 1.9rem; }
+  .tile .t-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.3rem; margin-top: 8px; }
+  .tile .t-sub { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.05em; color: var(--faded); margin-top: 4px; }
 
-  /* ── Filter bar ── */
-  .filter-bar { position: relative; max-width: 620px; margin: 0 auto 32px; }
-  .filter-bar input {
-    width: 100%; background: rgba(255,255,255,0.55); border: 1px solid var(--line);
-    border-radius: 4px; padding: 10px 34px 10px 14px; font-family: 'Libre Baskerville', serif;
-    font-size: 0.85rem; color: var(--ink); outline: none;
-  }
-  .filter-bar input:focus { border-color: var(--rust); background: #fff; }
-  .filter-bar input::placeholder { color: var(--tan); font-style: italic; }
-  .filter-clear {
-    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: var(--faded); cursor: pointer; font-size: 14px; padding: 4px 6px;
-  }
-  .filter-clear:hover { color: var(--rust); }
-
-  /* ── Inline edit ── */
-  .song-item { display: flex; flex-direction: column; }
-  .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
-  .icon-btn.edit:hover, .icon-btn.edit.on { background: var(--brown); color: var(--cream); }
-  .lnk.search { opacity: 0.42; }
-  .btn.sm { padding: 5px 11px; font-size: 0.68rem; }
-  .song-item.editing .song-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-  .song-edit {
-    display: none; background: rgba(74,46,26,0.05); border: 1px solid var(--line);
-    border-top: none; border-radius: 0 0 3px 3px; padding: 13px;
-  }
-  .song-edit.show { display: block; }
-  .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .edit-grid label {
-    display: flex; flex-direction: column; gap: 4px;
-    font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--faded);
-  }
-  .edit-grid label.wide { grid-column: 1 / -1; }
-  .edit-grid .lbl-hint { text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.7; font-family: 'Playfair Display', serif; }
-  .edit-grid input {
-    background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px;
-    padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink);
-    outline: none; text-transform: none; letter-spacing: normal;
-  }
-  .edit-grid input:focus { border-color: var(--rust); background: #fff; }
-  .edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 11px; }
-  .edit-saved { font-family: 'Special Elite', cursive; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
-  .edit-saved.show { opacity: 1; }
-  @media (max-width: 620px) { .edit-grid { grid-template-columns: 1fr; } }
-  .suggest-box {
-    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
-    background: var(--cream); border: 1px solid var(--tan); border-radius: 4px;
-    box-shadow: 2px 4px 16px rgba(74,46,26,0.25); z-index: 40; overflow: hidden;
-    display: none;
-  }
-  .suggest-box.show { display: block; }
-  .suggest-item { display: flex; align-items: center; gap: 11px; padding: 9px 13px; cursor: pointer; border-bottom: 1px solid rgba(196,176,138,0.4); }
-  .suggest-item:last-child { border-bottom: none; }
-  .suggest-item:hover, .suggest-item.active { background: rgba(200,169,122,0.22); }
-  .suggest-item img { width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0; background: var(--parchment); }
-  .suggest-item .s-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.85rem; }
-  .suggest-item .s-artist { font-size: 0.72rem; color: var(--faded); font-style: italic; }
-  .suggest-item.manual { font-family: 'Special Elite', cursive; font-size: 0.75rem; color: var(--rust); letter-spacing: 0.05em; }
-
-  /* ── Sections ── */
-  .lib-section { margin-bottom: 40px; }
-  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
+  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
   .section-head h2 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: 1.05rem; letter-spacing: 0.06em; }
   .section-head .count { font-family: 'Special Elite', cursive; color: var(--faded); font-size: 0.75rem; opacity: 0.75; }
-  .section-head .badge { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.08em; padding: 2px 9px; border-radius: 10px; }
-  .badge.learning { background: rgba(139,58,26,0.15); color: var(--rust); border: 1px solid rgba(139,58,26,0.3); }
-  .badge.learned  { background: rgba(58,107,58,0.15); color: var(--green); border: 1px solid rgba(58,107,58,0.35); }
 
-  .song-list { display: flex; flex-direction: column; gap: 8px; }
-  .song-row {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--parchment); border: 1px solid var(--line); border-radius: 3px;
-    padding: 10px 12px; transition: background 0.15s, box-shadow 0.15s;
-  }
-  .song-row:hover { box-shadow: 1px 2px 8px rgba(74,46,26,0.12); }
-  .learn-toggle {
-    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
-    border: 2px solid var(--tan); background: rgba(255,255,255,0.5); cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 12px; color: white;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .learn-toggle.done { background: var(--green); border-color: var(--green); }
-  .learn-toggle:hover { border-color: var(--green); }
+  .gig-list { display: flex; flex-direction: column; gap: 10px; }
+  .gig-card { display: flex; align-items: center; gap: 14px; text-decoration: none; background: var(--parchment); border: 1px solid var(--line); border-radius: 4px; padding: 13px 16px; transition: box-shadow 0.15s; }
+  .gig-card:hover { box-shadow: 1px 2px 10px rgba(74,46,26,0.15); }
+  .gig-when { flex-shrink: 0; text-align: center; min-width: 62px; }
+  .gig-when .gw-days { font-family: 'Special Elite', cursive; font-size: 1.4rem; font-weight: bold; color: var(--rust); line-height: 1; }
+  .gig-when .gw-lbl { font-family: 'Special Elite', cursive; font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
+  .gig-main { flex: 1; min-width: 0; }
+  .gig-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.05rem; }
+  .gig-meta { font-size: 0.78rem; color: var(--faded); font-style: italic; }
+  .gig-date { flex-shrink: 0; font-family: 'Special Elite', cursive; font-size: 0.78rem; color: var(--faded); text-align: right; }
+  .gig-badge { display: inline-block; font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 10px; margin-top: 3px; }
+  .gig-badge.soon { background: rgba(139,58,26,0.15); color: var(--rust); border: 1px solid rgba(139,58,26,0.3); }
+  .gig-badge.later { background: rgba(58,107,58,0.12); color: var(--green); border: 1px solid rgba(58,107,58,0.3); }
 
-  .song-main { flex: 1; min-width: 0; }
-  .song-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.95rem; line-height: 1.2; }
-  .song-artist { font-size: 0.76rem; color: var(--faded); font-style: italic; }
-  .song-row.done .song-title { color: var(--faded); }
-
-  .key-input {
-    width: 48px; flex-shrink: 0; text-align: center; background: rgba(255,255,255,0.6);
-    border: 1px solid var(--line); border-radius: 3px; padding: 5px 3px;
-    font-family: 'Special Elite', cursive; font-size: 0.8rem; color: var(--ink); outline: none;
-  }
-  .key-input:focus { border-color: var(--rust); background: #fff; }
-  .key-input::placeholder { color: var(--tan); }
-
-  .link-icons { display: flex; gap: 5px; flex-shrink: 0; }
-  .lnk {
-    width: 27px; height: 27px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; text-decoration: none; border: 1px solid transparent; cursor: pointer;
-  }
-  .lnk.yt { background: rgba(139,58,26,0.12); color: var(--rust); }
-  .lnk.yt:hover { background: var(--rust); color: white; }
-  .lnk.sp { background: rgba(58,107,58,0.12); color: var(--green); }
-  .lnk.sp:hover { background: var(--green); color: white; }
-  .lnk.ap { background: rgba(74,46,26,0.1); color: var(--brown); }
-  .lnk.ap:hover { background: var(--brown); color: white; }
-  .lnk.yts { background: rgba(200,169,122,0.18); color: var(--faded); font-size: 11px; }
-  .lnk.yts:hover { background: var(--brown); color: white; }
-
-  .row-actions { display: flex; gap: 5px; flex-shrink: 0; }
-  .icon-btn {
-    width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none;
-  }
-  .icon-btn.detail { background: var(--brown); color: var(--cream); }
-  .icon-btn.detail:hover { background: var(--rust); }
-  .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
-  .icon-btn.del:hover { background: var(--rust); color: white; }
-
-  .empty-state { text-align: center; color: var(--faded); padding: 30px 10px; }
-  .empty-state .big { font-size: 2rem; opacity: 0.4; margin-bottom: 8px; }
-  .empty-state p { font-family: 'Playfair Display', serif; font-style: italic; margin-bottom: 16px; }
-
+  .empty-state { text-align: center; color: var(--faded); padding: 24px 10px; }
+  .empty-state .big { font-size: 1.8rem; opacity: 0.4; margin-bottom: 6px; }
+  .empty-state p { font-family: 'Playfair Display', serif; font-style: italic; }
   .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
-
-  .toast {
-    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive;
-    font-size: 0.78rem; letter-spacing: 0.06em; padding: 10px 20px; border-radius: 4px;
-    box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
-    transition: opacity 0.25s, transform 0.25s; z-index: 300;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* ── Bulk import modal ── */
-  .bulk-modal { position: fixed; inset: 0; z-index: 400; background: rgba(26,15,6,0.6); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
-  .bulk-modal.show { display: flex; }
-  .bulk-card { background: var(--cream); border: 1px solid var(--tan); border-radius: 6px; max-width: 640px; width: 100%; box-shadow: 0 12px 44px rgba(0,0,0,0.4); }
-  .bulk-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--brown); color: var(--cream); border-radius: 6px 6px 0 0; font-family: 'Special Elite', cursive; letter-spacing: 0.06em; }
-  .bulk-x { background: none; border: none; color: var(--tan); font-size: 16px; cursor: pointer; }
-  .bulk-x:hover { color: var(--cream); }
-  .bulk-body { padding: 18px; }
-  .bulk-hint { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); font-size: 0.82rem; margin-bottom: 12px; }
-  #bulkText { width: 100%; min-height: 180px; resize: vertical; background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 4px; padding: 12px; font-family: 'Libre Baskerville', serif; font-size: 0.86rem; color: var(--ink); outline: none; line-height: 1.5; }
-  #bulkText:focus { border-color: var(--rust); background: #fff; }
-  .bulk-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-  .bulk-review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-family: 'Special Elite', cursive; font-size: 0.72rem; color: var(--faded); letter-spacing: 0.05em; }
-  .bulk-skip { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .bulk-list { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-  .bulk-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--parchment); }
-  .bulk-row.dup { opacity: 0.72; }
-  .bulk-inc { width: 16px; height: 16px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
-  .bulk-t { flex: 1.4 1 0; min-width: 0; }
-  .bulk-a { flex: 1 1 0; min-width: 0; }
-  .bulk-t, .bulk-a { background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; }
-  .bulk-t:focus, .bulk-a:focus { border-color: var(--rust); background: #fff; }
-  .bulk-dup-badge { flex-shrink: 0; font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.05em; color: var(--rust); background: rgba(139,58,26,0.12); border: 1px solid rgba(139,58,26,0.25); border-radius: 10px; padding: 2px 8px; }
-
-  @media (max-width: 620px) {
-    .song-artist { display: none; }
-    .link-icons .lnk.ap { display: none; }
-    .user-chip .uname { display: none; }
-  }
+  @media (max-width: 620px) { .user-chip .uname { display: none; } .gig-date { display: none; } }
 </style>
 </head>
 <body>
@@ -271,7 +83,7 @@
   <div class="signin-card">
     <div class="ornament">✦ ✦ ✦</div>
     <h1>The Setlist Book</h1>
-    <p>Your songs, your keys, your stage — everywhere you go.</p>
+    <p>Your songs, your bands, your stage — everywhere you go.</p>
     <button class="google-btn" id="googleBtn">
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Sign in with Google
@@ -279,11 +91,11 @@
   </div>
 </div>
 
-<!-- App -->
 <div class="topbar">
   <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
   <nav class="mainnav">
-    <a class="navlink active" href="index.html">📚 Library</a>
+    <a class="navlink active" href="index.html">🏠 Dashboard</a>
+    <a class="navlink" href="library.html">📚 Library</a>
     <a class="navlink" href="bands.html">🎸 Bands</a>
   </nav>
   <div class="topbar-spacer"></div>
@@ -291,513 +103,138 @@
   <button class="btn ghost" id="signoutBtn" style="display:none">Sign out</button>
 </div>
 
+<div class="loading" id="loading" style="display:none">Loading your dashboard…</div>
+
 <div class="wrap" id="appWrap" style="display:none">
-  <header class="page-head">
+  <div class="greeting">
     <div class="ornament">✦ ✦ ✦</div>
-    <h1>My Song Library</h1>
-    <p class="subtitle">Learn it · Know it · Play it</p>
-  </header>
-
-  <!-- Add / search -->
-  <div class="add-bar">
-    <div class="add-bar-input-row">
-      <input type="text" id="songSearch" placeholder="Add a song — type a title to search…" autocomplete="off">
-      <button class="btn" id="bulkBtn" title="Paste a whole list of songs" style="flex-shrink:0">⇪ Bulk</button>
-    </div>
-    <div class="suggest-box" id="suggestBox"></div>
+    <h1 id="hello">Welcome back</h1>
+    <p class="subtitle">Where to today?</p>
   </div>
 
-  <!-- Filter existing library -->
-  <div class="filter-bar">
-    <input type="text" id="libFilter" placeholder="🔍 Filter your library — find a song fast…" autocomplete="off">
-    <button class="filter-clear" id="libFilterClear" title="Clear" style="display:none">✕</button>
+  <div class="tiles">
+    <a class="tile" href="library.html"><div class="t-icon">📚</div><div class="t-name">My Songs</div><div class="t-sub" id="songSub">Your library</div></a>
+    <a class="tile" href="bands.html"><div class="t-icon">🎸</div><div class="t-name">My Bands</div><div class="t-sub" id="bandSub">Your projects</div></a>
+    <a class="tile" href="profile.html"><div class="t-icon">👤</div><div class="t-name">My Profile</div><div class="t-sub" id="profileSub">You &amp; your instruments</div></a>
   </div>
 
-  <!-- Learning -->
-  <div class="lib-section">
-    <div class="section-head">
-      <h2>Learning</h2>
-      <span class="badge learning">Practice</span>
-      <span class="count" id="learningCount"></span>
-    </div>
-    <div class="song-list" id="learningList"></div>
+  <div class="section-head">
+    <h2>🎤 Upcoming Gigs</h2>
+    <span class="count" id="gigCount"></span>
   </div>
-
-  <!-- Repertoire -->
-  <div class="lib-section">
-    <div class="section-head">
-      <h2>Repertoire</h2>
-      <span class="badge learned">Know it well</span>
-      <span class="count" id="learnedCount"></span>
-    </div>
-    <div class="song-list" id="learnedList"></div>
-  </div>
+  <div class="gig-list" id="gigList"></div>
 </div>
-
-<div class="loading" id="loading">Loading…</div>
-
-<!-- Bulk import -->
-<div class="bulk-modal" id="bulkModal">
-  <div class="bulk-card">
-    <div class="bulk-head"><span>⇪ Bulk add songs</span><button class="bulk-x" id="bulkClose">✕</button></div>
-    <div class="bulk-body">
-      <div id="bulkStep1">
-        <p class="bulk-hint">Paste a list — one song per line. Understands “Title - Artist”, “Title by Artist”, “Title, Artist”, tabs, numbered lists, or just titles.</p>
-        <textarea id="bulkText" placeholder="Mama Tried - Merle Haggard&#10;Honky Tonk Women - Rolling Stones&#10;Freeborn"></textarea>
-        <div class="bulk-actions">
-          <button class="btn ghost" id="bulkCancel">Cancel</button>
-          <button class="btn" id="bulkParse">Review →</button>
-        </div>
-      </div>
-      <div id="bulkStep2" style="display:none">
-        <div class="bulk-review-head">
-          <span id="bulkSummary"></span>
-          <label class="bulk-skip"><input type="checkbox" id="bulkSkipDup" checked> Skip duplicates</label>
-        </div>
-        <div class="bulk-list" id="bulkList"></div>
-        <div class="bulk-actions">
-          <button class="btn ghost" id="bulkBack">← Back</button>
-          <button class="btn" id="bulkCommit">Add <span id="bulkCount">0</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script type="module">
 import { auth, db, googleProvider } from './firebase-init.js';
-import { onAuthStateChanged, signInWithPopup, signOut }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
-         serverTimestamp, getDocs, writeBatch }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { parseSongList, markDuplicates } from './lib/import.js';
+import { onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-let currentUser = null;
-let songsUnsub  = null;
-let songsCache  = [];
-let editingId   = null;   // row currently open for inline editing (suppresses re-render)
-let filterTerm  = '';     // library filter text
-
-// ── Utilities ──
+const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1800);
-}
-function songsCol() { return collection(db, 'users', currentUser.uid, 'songs'); }
-function songDoc(id) { return doc(db, 'users', currentUser.uid, 'songs', id); }
 
-// Search fallbacks when a specific link isn't saved
-function ytSearch(s){ return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
-function ytLink(s)  { return s.youtube || ytSearch(s); }
-// Normalize a pasted YouTube value: a bare 11-char id becomes a full watch URL.
-function normYouTube(v) {
-  v = (v || '').trim();
-  if (!v) return '';
-  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
-  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function spLink(s)  { return s.spotify || 'https://open.spotify.com/search/' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
-function apLink(s)  { return s.apple   || 'https://music.apple.com/us/search?term=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const gig = new Date(dateStr + 'T00:00:00');
+  return Math.round((gig - today) / 86400000);
+}
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
-// ── Auth ──
-document.getElementById('googleBtn').addEventListener('click', async () => {
+$('googleBtn').addEventListener('click', async () => {
   try { await signInWithPopup(auth, googleProvider); }
-  catch (e) { toast('Sign-in failed: ' + (e.code || e.message)); }
+  catch (e) { alert('Sign-in failed: ' + (e.code || e.message)); }
 });
-document.getElementById('signoutBtn').addEventListener('click', () => signOut(auth));
+$('signoutBtn').addEventListener('click', () => signOut(auth));
 
-onAuthStateChanged(auth, user => {
-  currentUser = user;
-  const signin = document.getElementById('signinScreen');
-  const appWrap = document.getElementById('appWrap');
-  const loading = document.getElementById('loading');
-  const chip = document.getElementById('userChip');
-  const signout = document.getElementById('signoutBtn');
-
-  if (songsUnsub) { songsUnsub(); songsUnsub = null; }
-
+onAuthStateChanged(auth, async user => {
   if (!user) {
-    signin.classList.add('show');
-    appWrap.style.display = 'none';
-    loading.style.display = 'none';
-    chip.innerHTML = '';
-    signout.style.display = 'none';
+    $('signinScreen').classList.add('show');
+    $('appWrap').style.display = 'none';
+    $('loading').style.display = 'none';
+    $('userChip').innerHTML = '';
+    $('signoutBtn').style.display = 'none';
     return;
   }
-
-  signin.classList.remove('show');
-  signout.style.display = '';
-  chip.innerHTML = `${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="">` : ''}<span class="uname">${esc(user.displayName || user.email)}</span>`;
-  loading.style.display = 'block';
-  appWrap.style.display = 'none';
-
-  // Live library subscription
-  songsUnsub = onSnapshot(query(songsCol(), orderBy('title')), snap => {
-    songsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    loading.style.display = 'none';
-    appWrap.style.display = 'block';
-    if (!editingId) renderLibrary();   // don't clobber an open inline editor
-  }, err => {
-    loading.textContent = 'Could not load your library: ' + err.message;
-  });
+  $('signinScreen').classList.remove('show');
+  $('signoutBtn').style.display = '';
+  $('userChip').innerHTML = `${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="">` : ''}<span class="uname">${esc(user.displayName || user.email)}</span>`;
+  const first = (user.displayName || user.email || '').split(' ')[0].split('@')[0];
+  $('hello').textContent = first ? `Welcome back, ${first}` : 'Welcome back';
+  $('loading').style.display = 'block';
+  $('appWrap').style.display = 'none';
+  await loadDashboard(user);
 });
 
-// ── Render ──
-function libMatch(s) {
-  const q = filterTerm.trim().toLowerCase();
-  return !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
-}
-function renderLibrary() {
-  const learning = songsCache.filter(s => s.status !== 'learned' && libMatch(s));
-  const learned  = songsCache.filter(s => s.status === 'learned' && libMatch(s));
-  renderSection('learningList', 'learningCount', learning, true);
-  renderSection('learnedList', 'learnedCount', learned, false);
-}
+async function loadDashboard(user) {
+  try {
+    // Songs
+    const songsSnap = await getDocs(collection(db, 'users', user.uid, 'songs'));
+    const total = songsSnap.size;
+    let learning = 0;
+    songsSnap.forEach(d => { if ((d.data().status || 'learning') !== 'learned') learning++; });
+    $('songSub').textContent = total ? `${total} song${total===1?'':'s'}${learning?` · ${learning} learning`:''}` : 'Add your first song';
 
-function renderSection(listId, countId, songs, isLearning) {
-  const list = document.getElementById(listId);
-  document.getElementById(countId).textContent = songs.length + (songs.length === 1 ? ' song' : ' songs');
-  list.innerHTML = '';
+    // Bands
+    const bandsSnap = await getDocs(query(collection(db, 'bands'), where('memberUids', 'array-contains', user.uid)));
+    const bands = bandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    $('bandSub').textContent = bands.length ? `${bands.length} band${bands.length===1?'':'s'}` : 'Create or join a band';
 
-  if (!songs.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    const filtering = filterTerm.trim().length > 0;
-    if (filtering) {
-      empty.innerHTML = `<p>No ${isLearning ? 'practice' : 'known'} songs match “${esc(filterTerm.trim())}”.</p>`;
-    } else if (isLearning && songsCache.length === 0) {
-      empty.innerHTML = `<div class="big">🎸</div><p>Your library is empty. Search for a song above to start —<br>or bring in the classic 44-song book.</p>
-        <button class="btn" id="importBtn">Import 44 starter songs</button>`;
-    } else {
-      empty.innerHTML = isLearning
-        ? `<p>Nothing in practice right now. Nice.</p>`
-        : `<p>No songs marked as known yet. Tick the circle when you've got one down.</p>`;
-    }
-    list.appendChild(empty);
-    const ib = empty.querySelector('#importBtn');
-    if (ib) ib.addEventListener('click', importStarter);
-    return;
-  }
-
-  songs.forEach(s => list.appendChild(songRow(s)));
-}
-
-function songRow(s) {
-  const editing = editingId === s.id;
-  const item = document.createElement('div');
-  item.className = 'song-item' + (editing ? ' editing' : '');
-  item.innerHTML = `
-    <div class="song-row${s.status === 'learned' ? ' done' : ''}">
-      <button class="learn-toggle ${s.status === 'learned' ? 'done' : ''}" title="Mark as ${s.status === 'learned' ? 'still learning' : 'known'}">${s.status === 'learned' ? '✓' : ''}</button>
-      <div class="song-main">
-        <div class="song-title">${esc(s.title)}</div>
-        <div class="song-artist">${esc(s.artist || '—')}</div>
-      </div>
-      <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
-      <div class="link-icons">
-        <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
-        <a class="lnk yts" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube for this song">🔍</a>
-        <a class="lnk sp ${s.spotify ? '' : 'search'}" href="${esc(spLink(s))}" target="_blank" title="${s.spotify ? 'Open saved Spotify' : 'Search Spotify'}">♫</a>
-        <a class="lnk ap ${s.apple ? '' : 'search'}" href="${esc(apLink(s))}" target="_blank" title="${s.apple ? 'Open saved Apple Music' : 'Search Apple Music'}"></a>
-      </div>
-      <div class="row-actions">
-        <button class="icon-btn edit${editing ? ' on' : ''}" title="Quick edit">✏️</button>
-        <a class="icon-btn detail" href="song.html?id=${encodeURIComponent(s.id)}" title="Open detail / notes">📖</a>
-        <button class="icon-btn del" title="Remove">✕</button>
-      </div>
-    </div>
-    <div class="song-edit${editing ? ' show' : ''}">
-      <div class="edit-grid">
-        <label>Title<input data-f="title" value="${esc(s.title || '')}"></label>
-        <label>Artist<input data-f="artist" value="${esc(s.artist || '')}"></label>
-        <label class="wide">YouTube URL <span class="lbl-hint">— paste one to lock in a specific video</span><input data-f="youtube" placeholder="https://youtube.com/watch?v=…" value="${esc(s.youtube || '')}"></label>
-        <label>Spotify URL<input data-f="spotify" placeholder="Optional" value="${esc(s.spotify || '')}"></label>
-        <label>Apple Music URL<input data-f="apple" placeholder="Optional" value="${esc(s.apple || '')}"></label>
-      </div>
-      <div class="edit-actions"><span class="edit-saved">Saved ✓</span><button class="btn sm edit-done">Done</button></div>
-    </div>`;
-
-  const row = item.querySelector('.song-row');
-  row.querySelector('.learn-toggle').addEventListener('click', () =>
-    updateDoc(songDoc(s.id), { status: s.status === 'learned' ? 'learning' : 'learned', updatedAt: serverTimestamp() }));
-
-  const keyInput = row.querySelector('.key-input');
-  keyInput.addEventListener('change', () =>
-    updateDoc(songDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
-
-  row.querySelector('.del').addEventListener('click', () => {
-    if (confirm(`Remove "${s.title}" from your library?`)) deleteDoc(songDoc(s.id));
-  });
-
-  row.querySelector('.edit').addEventListener('click', () => {
-    editingId = (editingId === s.id) ? null : s.id;
-    renderLibrary();
-    if (editingId === s.id) {
-      const inp = document.querySelector('.song-item.editing .song-edit input[data-f="title"]');
-      if (inp) inp.focus();
-    }
-  });
-
-  // Inline edit wiring
-  const editPanel = item.querySelector('.song-edit');
-  const savedNote = editPanel.querySelector('.edit-saved');
-  function flashSaved() { savedNote.classList.add('show'); setTimeout(() => savedNote.classList.remove('show'), 1400); }
-  function normUrl(v) { v = v.trim(); return v && !/^https?:\/\//i.test(v) ? 'https://' + v : v; }
-
-  editPanel.querySelectorAll('input[data-f]').forEach(inp => {
-    inp.addEventListener('change', async () => {
-      const f = inp.dataset.f;
-      let val = inp.value.trim();
-      if (f === 'youtube') val = normYouTube(inp.value);
-      else if (f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+    // Upcoming gigs across all bands
+    const today = todayStr();
+    const gigs = [];
+    await Promise.all(bands.map(async b => {
       try {
-        await updateDoc(songDoc(s.id), { [f]: val, updatedAt: serverTimestamp() });
-        s[f] = val;  // keep local copy fresh for live href updates
-        if (f === 'title') { row.querySelector('.song-title').textContent = val || '(untitled)'; row.querySelector('.lnk.yts').href = ytSearch(s); }
-        if (f === 'artist') { row.querySelector('.song-artist').textContent = val || '—'; row.querySelector('.lnk.yts').href = ytSearch(s); }
-        if (f === 'youtube') refreshLnk(row.querySelector('.lnk.yt'), val, ytLink(s), 'video', 'YouTube');
-        if (f === 'spotify') refreshLnk(row.querySelector('.lnk.sp'), val, spLink(s), 'Spotify', 'Spotify');
-        if (f === 'apple')   refreshLnk(row.querySelector('.lnk.ap'), val, apLink(s), 'Apple Music', 'Apple Music');
-        flashSaved();
-      } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
-    });
-  });
-  editPanel.querySelector('.edit-done').addEventListener('click', () => { editingId = null; renderLibrary(); });
-
-  return item;
-}
-
-function refreshLnk(el, savedVal, computedHref, savedNoun, searchNoun) {
-  if (!el) return;
-  el.href = computedHref;
-  if (savedVal) { el.classList.remove('search'); el.title = 'Open saved ' + savedNoun; }
-  else { el.classList.add('search'); el.title = 'Search ' + searchNoun; }
-}
-
-// ── Add song (+ iTunes autocomplete) ──
-const searchInput = document.getElementById('songSearch');
-const suggestBox  = document.getElementById('suggestBox');
-let searchTimer = null;
-let suggestions = [];
-
-searchInput.addEventListener('input', () => {
-  const term = searchInput.value.trim();
-  clearTimeout(searchTimer);
-  if (term.length < 2) { hideSuggest(); return; }
-  searchTimer = setTimeout(() => runSearch(term), 280);
-});
-
-searchInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const term = searchInput.value.trim();
-    if (term) addSong({ title: term });  // add exactly what was typed
-  } else if (e.key === 'Escape') {
-    hideSuggest();
-  }
-});
-
-document.addEventListener('click', e => {
-  if (!suggestBox.contains(e.target) && e.target !== searchInput) hideSuggest();
-});
-
-// ── Filter existing library ──
-const libFilter = document.getElementById('libFilter');
-const libFilterClear = document.getElementById('libFilterClear');
-libFilter.addEventListener('input', () => {
-  filterTerm = libFilter.value;
-  libFilterClear.style.display = filterTerm ? '' : 'none';
-  if (!editingId) renderLibrary();
-});
-libFilterClear.addEventListener('click', () => {
-  libFilter.value = ''; filterTerm = ''; libFilterClear.style.display = 'none';
-  renderLibrary(); libFilter.focus();
-});
-
-async function runSearch(term) {
-  try {
-    const res = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=7&term=' + encodeURIComponent(term));
-    if (searchInput.value.trim() !== term) return; // stale
-    const data = await res.json();
-    suggestions = (data.results || []).map(r => ({
-      title: r.trackName,
-      artist: r.artistName,
-      apple: r.trackViewUrl || '',
-      artwork: (r.artworkUrl100 || '').replace('100x100', '100x100')
-    }));
-    showSuggest(term);
-  } catch { suggestions = []; showSuggest(term); }  // API blocked → still offer manual add
-}
-
-function showSuggest(term) {
-  suggestBox.innerHTML = '';
-  suggestions.forEach(sg => {
-    const item = document.createElement('div');
-    item.className = 'suggest-item';
-    item.innerHTML = `
-      ${sg.artwork ? `<img src="${esc(sg.artwork)}" alt="">` : '<div style="width:34px;height:34px"></div>'}
-      <div><div class="s-title">${esc(sg.title)}</div><div class="s-artist">${esc(sg.artist)}</div></div>`;
-    item.addEventListener('click', () => addSong(sg));
-    suggestBox.appendChild(item);
-  });
-  const manual = document.createElement('div');
-  manual.className = 'suggest-item manual';
-  manual.innerHTML = `＋ Add “${esc(term)}” as a new song`;
-  manual.addEventListener('click', () => addSong({ title: term }));
-  suggestBox.appendChild(manual);
-  suggestBox.classList.add('show');
-}
-function hideSuggest() { suggestBox.classList.remove('show'); suggestBox.innerHTML = ''; }
-
-async function addSong(data) {
-  if (!currentUser || !data.title) return;
-  const dup = songsCache.find(s => (s.title || '').toLowerCase() === data.title.toLowerCase()
-    && (s.artist || '').toLowerCase() === (data.artist || '').toLowerCase());
-  if (dup) { toast('Already in your library'); }
-  else {
-    await addDoc(songsCol(), {
-      title: data.title,
-      artist: data.artist || '',
-      key: '',
-      status: 'learning',
-      youtube: '', spotify: '', apple: data.apple || '',
-      songsterr: '', ug: '', tab1: '', tab2: '',
-      tempo: '', structure: '', tricky: '', notes: '',
-      artwork: data.artwork || '',
-      mp3Url: '', mp3Path: '', mp3Name: '',
-      perfs: [],
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-    });
-    toast('Added to Learning');
-  }
-  searchInput.value = '';
-  hideSuggest();
-}
-
-// ── Bulk import ──
-let bulkParsed = [];
-document.getElementById('bulkBtn').addEventListener('click', openBulk);
-document.getElementById('bulkClose').addEventListener('click', closeBulk);
-document.getElementById('bulkCancel').addEventListener('click', closeBulk);
-document.getElementById('bulkBack').addEventListener('click', () => { document.getElementById('bulkStep2').style.display = 'none'; document.getElementById('bulkStep1').style.display = ''; });
-document.getElementById('bulkParse').addEventListener('click', doParse);
-document.getElementById('bulkSkipDup').addEventListener('change', applySkipDup);
-document.getElementById('bulkCommit').addEventListener('click', commitBulk);
-
-function openBulk() {
-  document.getElementById('bulkModal').classList.add('show');
-  document.getElementById('bulkStep1').style.display = '';
-  document.getElementById('bulkStep2').style.display = 'none';
-  document.getElementById('bulkText').value = '';
-  document.getElementById('bulkText').focus();
-}
-function closeBulk() { document.getElementById('bulkModal').classList.remove('show'); }
-
-function doParse() {
-  const parsed = parseSongList(document.getElementById('bulkText').value);
-  if (!parsed.length) { toast('Nothing to import — paste some songs'); return; }
-  bulkParsed = markDuplicates(parsed, songsCache).map(m => ({ ...m, include: !m.dup }));
-  renderBulkList();
-  document.getElementById('bulkStep1').style.display = 'none';
-  document.getElementById('bulkStep2').style.display = '';
-}
-
-function applySkipDup() {
-  const skip = document.getElementById('bulkSkipDup').checked;
-  bulkParsed.forEach(p => { if (p.dup) p.include = !skip; });
-  renderBulkList();
-}
-
-function renderBulkList() {
-  const list = document.getElementById('bulkList');
-  list.innerHTML = '';
-  bulkParsed.forEach(p => {
-    const row = document.createElement('div');
-    row.className = 'bulk-row' + (p.dup ? ' dup' : '');
-    row.innerHTML = `
-      <input type="checkbox" class="bulk-inc" ${p.include ? 'checked' : ''}>
-      <input type="text" class="bulk-t" value="${esc(p.title)}" placeholder="Title">
-      <input type="text" class="bulk-a" value="${esc(p.artist)}" placeholder="Artist">
-      ${p.dup ? '<span class="bulk-dup-badge">in library</span>' : ''}`;
-    const inc = row.querySelector('.bulk-inc');
-    inc.addEventListener('change', () => { p.include = inc.checked; updateBulkCount(); });
-    row.querySelector('.bulk-t').addEventListener('input', e => { p.title = e.target.value; updateBulkCount(); });
-    row.querySelector('.bulk-a').addEventListener('input', e => { p.artist = e.target.value; });
-    list.appendChild(row);
-  });
-  const dups = bulkParsed.filter(p => p.dup).length;
-  document.getElementById('bulkSummary').textContent = `${bulkParsed.length} parsed${dups ? ` · ${dups} already in library` : ''}`;
-  updateBulkCount();
-}
-function updateBulkCount() {
-  const n = bulkParsed.filter(p => p.include && p.title.trim()).length;
-  document.getElementById('bulkCount').textContent = n + ' song' + (n === 1 ? '' : 's');
-}
-
-async function commitBulk() {
-  const toAdd = bulkParsed.filter(p => p.include && p.title.trim());
-  if (!toAdd.length) { toast('Nothing selected'); return; }
-  const btn = document.getElementById('bulkCommit'); btn.disabled = true;
-  try {
-    for (let i = 0; i < toAdd.length; i += 450) {
-      const batch = writeBatch(db);
-      toAdd.slice(i, i + 450).forEach(p => {
-        batch.set(doc(songsCol()), {
-          title: p.title.trim(), artist: p.artist.trim(), key: '', status: 'learning',
-          youtube: '', spotify: '', apple: '', songsterr: '', ug: '', tab1: '', tab2: '',
-          tempo: '', structure: '', tricky: '', notes: '', artwork: '',
-          mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
-          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        const slSnap = await getDocs(collection(db, 'bands', b.id, 'setlists'));
+        slSnap.forEach(d => {
+          const sl = d.data();
+          if (sl.gigDate && sl.gigDate >= today) {
+            gigs.push({ bandId: b.id, bandName: b.name || 'Band', id: d.id, name: sl.name || 'Setlist', gigDate: sl.gigDate });
+          }
         });
-      });
-      await batch.commit();
-    }
-    toast(`Added ${toAdd.length} song${toAdd.length === 1 ? '' : 's'}`);
-    closeBulk();
-  } catch (e) { toast('Import failed: ' + (e.code || e.message)); }
-  finally { btn.disabled = false; }
+      } catch {}
+    }));
+    gigs.sort((a, b) => a.gigDate.localeCompare(b.gigDate));
+    renderGigs(gigs);
+  } catch (e) {
+    $('gigList').innerHTML = `<div class="empty-state"><p>Couldn't load dashboard: ${esc(e.code || e.message)}</p></div>`;
+  }
+  $('loading').style.display = 'none';
+  $('appWrap').style.display = 'block';
 }
 
-// ── One-time import of the classic 44-song book ──
-const STARTER = [
-  ["Lonesome Me","Neil Young","EsA5tLr4_Pw"],["Downhill","Sister Hazel",""],["Fireman","George Strait","PGdWmexwJok"],
-  ["Dead Flowers","Rolling Stones","V3RLjuLWjUk"],["Give Me a Ride","",""],["Till I Hear It From You","Gin Blossoms","o7sx32alzeE"],
-  ["Can't Wait Anymore","Sister Hazel",""],["Blame It on Your Heart","Patty Loveless","qFf9E1B3RFM"],["Turn It On","",""],
-  ["Cryin, Waitin","Buddy Holly","qrUfGaGT8VQ"],["To Be Real","",""],["Jefferson Street","",""],["Thick of It","",""],
-  ["Anyplace","",""],["All You Ever Do Is Bring Me Down","The Mavericks","pHJb4DXSEGk"],["Timber","",""],
-  ["Let Her Dance","Bobby Fuller Four","XJuEHB6S3Jk"],["All Once in Here","",""],["Pretty Wanted","",""],
-  ["Tempted","Squeeze","_gMpmtJ3V_g"],["Georgia on a Fast Train","Billy Joe Shaver","RJLq7gvEE_Q"],
-  ["Home of the Blues","Johnny Cash","u6RzHCNwWVg"],["Hello Mary Lou","Ricky Nelson","hWi3nGHeTHk"],
-  ["Wanna Believe","",""],["Mama Tried","Merle Haggard","LSoDyG6kGOA"],["Honky Tonk Women","Rolling Stones","oHpSdGUe5wE"],
-  ["Ain't That Lonely Yet","Dwight Yoakam","ikEL0PJRbdk"],["Freeborn","",""],["Don't Look Back in Anger","Oasis","cmpVEMbKGAM"],
-  ["You Don't Know How It Feels","Tom Petty","MBgSfT6cqXI"],["Not Dead Anymore","",""],
-  ["Who Were You Thinking Of","Texas Tornados","wQ6FJCiKaeQ"],["Guitars Cadillacs","Dwight Yoakam","hT2sdgBtAW8"],
-  ["Don't Change","INXS","4LmHMZeS4pM"],["Dance the Night Away","The Mavericks","A9L8hQHkAiE"],
-  ["Rainy Day Woman","",""]
-];
-
-async function importStarter() {
-  if (!currentUser) return;
-  toast('Importing…');
-  const batch = writeBatch(db);
-  STARTER.forEach(([title, artist, ytId]) => {
-    const ref = doc(songsCol());
-    batch.set(ref, {
-      title, artist, key: '', status: 'learning',
-      youtube: ytId ? 'https://www.youtube.com/watch?v=' + ytId : '',
-      spotify: '', apple: '', songsterr: '', ug: '', tab1: '', tab2: '',
-      tempo: '', structure: '', tricky: '', notes: '', artwork: '',
-      mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-    });
+function renderGigs(gigs) {
+  $('gigCount').textContent = gigs.length ? `${gigs.length} coming up` : '';
+  const list = $('gigList');
+  list.innerHTML = '';
+  if (!gigs.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">🗓️</div><p>No upcoming gigs. Open a band, create a setlist, and give it a gig date —<br>it'll show up here with a countdown.</p></div>`;
+    return;
+  }
+  gigs.forEach(g => {
+    const days = daysUntil(g.gigDate);
+    const a = document.createElement('a');
+    a.className = 'gig-card';
+    a.href = 'setlist.html?band=' + encodeURIComponent(g.bandId) + '&id=' + encodeURIComponent(g.id);
+    a.innerHTML = `
+      <div class="gig-when">
+        <div class="gw-days">${days === 0 ? '🎶' : days}</div>
+        <div class="gw-lbl">${days === 0 ? 'tonight' : days === 1 ? 'day' : 'days'}</div>
+      </div>
+      <div class="gig-main">
+        <div class="gig-name">${esc(g.name)}</div>
+        <div class="gig-meta">${esc(g.bandName)}</div>
+        <span class="gig-badge ${days <= 14 ? 'soon' : 'later'}">${days === 0 ? 'Tonight!' : days + ' day' + (days===1?'':'s') + ' away'}</span>
+      </div>
+      <div class="gig-date">${esc(fmtDate(g.gigDate))}</div>`;
+    list.appendChild(a);
   });
-  await batch.commit();
-  toast('Imported ' + STARTER.length + ' songs');
 }
 </script>
 </body>

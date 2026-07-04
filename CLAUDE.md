@@ -16,13 +16,15 @@ https://setlist-to-stage.web.app/ , backed by **Firebase Auth + Firestore + Stor
 - **Styling**: inline `<style>` per page using the shared parchment/brown palette CSS vars
   (`--cream --parchment --brown --rust --tan --ink --faded --line --green`). Fonts: Playfair
   Display (titles), Libre Baskerville (body), Special Elite (labels).
-- **Shared top nav** on app pages: 📚 Library (`index.html`) · 🎸 Bands (`bands.html`), with the
-  user avatar/name (top-right) linking to `profile.html`. Song detail is `song.html?id=`.
-  `legacy-setlist.html` is the retired pre-Firebase demo (not in nav).
+- **Shared top nav** on app pages: 🏠 Dashboard (`index.html`) · 📚 Library (`library.html`) · 🎸 Bands
+  (`bands.html`), with the user avatar/name (top-right) linking to `profile.html`. Song detail is
+  `song.html?id=`. `legacy-setlist.html` is the retired pre-Firebase demo (not in nav).
 
 ## Pages
-`index.html` library · `song.html` song detail · `profile.html` · `bands.html` · `band.html?id=`
-(band Song List + setlists) · `setlist.html?band=&id=` (setlist editor + stage/print/export/practice).
+`index.html` **dashboard/home** (tiles + upcoming gigs; also the sign-in landing) · `library.html`
+personal song library · `song.html` song detail · `profile.html` (incl. Member ID for sharing) ·
+`bands.html` · `band.html?id=` (band Song List + setlists + invite) · `setlist.html?band=&id=`
+(setlist editor + stage/print/export/practice) · `join.html?band=` (invite-link self-join).
 
 ## Data model (Firestore)
 - `users/{uid}` profile; `users/{uid}/songs/{id}` personal library.

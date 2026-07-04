@@ -180,7 +180,8 @@
 <div class="topbar">
   <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
   <nav class="mainnav">
-    <a class="navlink" href="index.html">📚 Library</a>
+    <a class="navlink" href="index.html">🏠 Dashboard</a>
+    <a class="navlink" href="library.html">📚 Library</a>
     <a class="navlink active" href="bands.html">🎸 Bands</a>
   </nav>
   <div class="topbar-spacer"></div>
@@ -190,7 +191,7 @@
 
 <div id="gate" class="gate" style="display:none">
   <h2>Please sign in</h2>
-  <p>Open the <a href="index.html">library</a> and sign in with Google to view this band.</p>
+  <p>Open the <a href="library.html">library</a> and sign in with Google to view this band.</p>
 </div>
 
 <div class="loading" id="loading">Loading…</div>
@@ -554,7 +555,7 @@ function renderLibPicker(term) {
   const items = libraryCache.filter(s =>
     !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
   list.innerHTML = '';
-  if (!libraryCache.length) { list.innerHTML = `<div class="soon-note">Your library is empty. Add songs on the <a href="index.html">Library</a> page first.</div>`; return; }
+  if (!libraryCache.length) { list.innerHTML = `<div class="soon-note">Your library is empty. Add songs on the <a href="library.html">Library</a> page first.</div>`; return; }
   if (!items.length) { list.innerHTML = `<div class="soon-note">No matches.</div>`; return; }
   items.forEach(s => {
     const already = repHas(s.title, s.artist);
