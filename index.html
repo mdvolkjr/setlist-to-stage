@@ -43,7 +43,8 @@
     background: rgba(139,58,26,0.45); color: var(--cream);
     box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3);
   }
-  .user-chip { display: flex; align-items: center; gap: 9px; }
+  .user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 8px 3px 3px; border-radius: 20px; transition: background 0.15s; }
+  .user-chip:hover { background: rgba(255,255,255,0.09); }
   .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
   .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
   .btn {
@@ -211,11 +212,11 @@
   <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
   <nav class="mainnav">
     <a class="navlink active" href="index.html">📚 Library</a>
-    <a class="navlink" href="profile.html">👤 Profile</a>
+    <a class="navlink" href="bands.html">🎸 Bands</a>
     <a class="navlink" href="legacy-setlist.html">📋 Band Setlist</a>
   </nav>
   <div class="topbar-spacer"></div>
-  <div class="user-chip" id="userChip"></div>
+  <a class="user-chip" id="userChip" href="profile.html" title="Your profile & settings"></a>
   <button class="btn ghost" id="signoutBtn" style="display:none">Sign out</button>
 </div>
 

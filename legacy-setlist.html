@@ -20,8 +20,26 @@
     background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
     font-family: 'Libre Baskerville', Georgia, serif;
     color: var(--ink); min-height: 100vh;
-    display: flex;
+    display: flex; flex-direction: column;
   }
+
+  /* ── Shared top nav ── */
+  .legacy-topbar {
+    background: var(--brown); padding: 10px 20px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 60;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .legacy-topbar .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 0.95rem; letter-spacing: 0.08em; text-decoration: none; }
+  .legacy-topbar .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .legacy-topbar .navlink {
+    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
+    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s;
+  }
+  .legacy-topbar .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
+  .legacy-topbar .navlink.active { background: rgba(139,58,26,0.45); color: var(--cream); box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3); }
+  .legacy-body { display: flex; flex: 1; min-height: 0; }
 
   /* ── Sidebar ── */
   .sidebar {
@@ -31,8 +49,8 @@
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: 0;
-    height: 100vh;
+    top: 52px;
+    height: calc(100vh - 52px);
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 10;
@@ -328,10 +346,22 @@
 </head>
 <body>
 
+<!-- Shared top nav -->
+<div class="legacy-topbar">
+  <a class="brand" href="index.html">The Setlist Book</a>
+  <nav class="mainnav">
+    <a class="navlink" href="index.html">📚 Library</a>
+    <a class="navlink" href="bands.html">🎸 Bands</a>
+    <a class="navlink active" href="legacy-setlist.html">📋 Band Setlist</a>
+    <a class="navlink" href="profile.html">👤 Profile</a>
+  </nav>
+</div>
+
 <!-- Mobile sidebar toggle -->
 <button class="sidebar-toggle" onclick="toggleSidebar()">☰ &nbsp;Band</button>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
+<div class="legacy-body">
 <!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
@@ -370,6 +400,7 @@
     <div class="hint">✦ Click 📖 to open a song's full detail page &nbsp;·&nbsp; 💾 to save a row &nbsp;·&nbsp; ✓ = know it well</div>
   </div>
 </div>
+</div><!-- end legacy-body -->
 
 <!-- Floating save button -->
 <div class="float-save">

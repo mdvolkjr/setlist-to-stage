@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Band — The Setlist Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
+    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
+    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
+  }
+  body {
+    background-color: var(--cream);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    color: var(--ink); min-height: 100vh;
+  }
+  .topbar {
+    background: var(--brown); padding: 12px 22px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
+  .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
+  .topbar-spacer { flex: 1; }
+  .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .navlink {
+    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
+    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s;
+  }
+  .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
+  .navlink.active { background: rgba(139,58,26,0.45); color: var(--cream); box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3); }
+  .user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 8px 3px 3px; border-radius: 20px; transition: background 0.15s; }
+  .user-chip:hover { background: rgba(255,255,255,0.09); }
+  .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
+  .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
+  .btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
+    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
+    padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: #a04020; }
+  .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
+  .btn.ghost:hover { background: rgba(255,255,255,0.15); }
+  .btn.sm { padding: 5px 10px; font-size: 0.68rem; }
+
+  /* Band hero */
+  .hero { background: linear-gradient(135deg, var(--brown) 0%, #3a1e0c 100%); padding: 26px 24px; }
+  .hero-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .hero .band-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--cream); font-size: clamp(1.6rem,4vw,2.6rem); line-height: 1.05; }
+  .hero .band-desc { font-family: 'Playfair Display', serif; font-style: italic; color: var(--tan); font-size: 0.95rem; margin-top: 4px; }
+  .hero .hero-spacer { flex: 1; }
+  .back-link { font-family: 'Special Elite', cursive; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--tan); text-decoration: none; }
+  .back-link:hover { color: var(--cream); }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 26px 18px 90px; }
+
+  .panel { background: var(--parchment); border: 1px solid var(--tan); border-radius: 3px; overflow: hidden; margin-bottom: 22px; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
+  .panel-header {
+    background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line);
+    padding: 11px 16px; font-family: 'Special Elite', cursive; font-size: 0.75rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-header .count { margin-left: auto; opacity: 0.75; font-size: 0.7rem; text-transform: none; letter-spacing: 0.04em; }
+  .panel-body { padding: 16px; }
+
+  .field-label { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); margin-bottom: 5px; display: block; }
+  .text-input {
+    width: 100%; background: rgba(255,255,255,0.7); border: 1px solid var(--line);
+    border-radius: 3px; padding: 8px 10px; font-family: 'Libre Baskerville', serif;
+    font-size: 0.88rem; color: var(--ink); outline: none;
+  }
+  .text-input:focus { border-color: var(--rust); background: #fff; }
+  .text-input::placeholder { color: var(--tan); font-style: italic; }
+
+  /* Add row */
+  .add-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .manual-add { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: rgba(74,46,26,0.05); border: 1px dashed var(--tan); border-radius: 3px; }
+  .manual-add .ma-field { display: flex; flex-direction: column; }
+  .manual-add .ma-title { flex: 2 1 160px; }
+  .manual-add .ma-artist { flex: 2 1 130px; }
+  .manual-add .ma-key { flex: 0 0 70px; }
+  .manual-add.hidden, .lib-picker.hidden { display: none; }
+
+  /* Library picker */
+  .lib-picker { border: 1px solid var(--line); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+  .lib-picker-head { padding: 10px 12px; background: rgba(74,46,26,0.05); border-bottom: 1px solid var(--line); }
+  .lib-picker-list { max-height: 300px; overflow-y: auto; }
+  .lib-pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid rgba(196,176,138,0.4); }
+  .lib-pick-row:last-child { border-bottom: none; }
+  .lib-pick-row .lp-main { flex: 1; min-width: 0; }
+  .lib-pick-row .lp-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.88rem; }
+  .lib-pick-row .lp-artist { font-size: 0.74rem; color: var(--faded); font-style: italic; }
+  .lib-pick-row.added .lp-title { color: var(--faded); }
+
+  /* Repertoire rows */
+  .song-list { display: flex; flex-direction: column; gap: 8px; }
+  .song-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 3px; padding: 9px 12px; }
+  .song-main { flex: 1; min-width: 0; }
+  .song-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.92rem; line-height: 1.2; }
+  .song-artist { font-size: 0.75rem; color: var(--faded); font-style: italic; }
+  .key-input { width: 48px; flex-shrink: 0; text-align: center; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; padding: 5px 3px; font-family: 'Special Elite', cursive; font-size: 0.8rem; color: var(--ink); outline: none; }
+  .key-input:focus { border-color: var(--rust); background: #fff; }
+  .link-icons { display: flex; gap: 5px; flex-shrink: 0; }
+  .lnk { width: 27px; height: 27px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-decoration: none; cursor: pointer; }
+  .lnk.yt { background: rgba(139,58,26,0.12); color: var(--rust); } .lnk.yt:hover { background: var(--rust); color: white; }
+  .lnk.sp { background: rgba(58,107,58,0.12); color: var(--green); } .lnk.sp:hover { background: var(--green); color: white; }
+  .lnk.ap { background: rgba(74,46,26,0.1); color: var(--brown); } .lnk.ap:hover { background: var(--brown); color: white; }
+  .icon-btn { width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
+  .icon-btn.del:hover { background: var(--rust); color: white; }
+
+  .empty-state { text-align: center; color: var(--faded); padding: 24px 10px; }
+  .empty-state .big { font-size: 1.8rem; opacity: 0.4; margin-bottom: 6px; }
+  .empty-state p { font-family: 'Playfair Display', serif; font-style: italic; }
+
+  /* Settings + members */
+  .members-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .member-chip { font-family: 'Special Elite', cursive; font-size: 0.66rem; letter-spacing: 0.04em; padding: 4px 11px; border-radius: 12px; background: rgba(139,58,26,0.12); color: var(--rust); border: 1px solid rgba(139,58,26,0.25); }
+  .settings-body { display: none; }
+  .settings-body.show { display: block; }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 560px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .soon-note { color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; text-align: center; padding: 10px 6px; line-height: 1.6; }
+
+  .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
+  .gate h2 { font-family: 'Special Elite', cursive; color: var(--brown); margin-bottom: 10px; }
+  .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive; font-size: 0.78rem; letter-spacing: 0.06em; padding: 10px 20px; border-radius: 4px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 300; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 620px) { .user-chip .uname { display: none; } .song-artist { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
+  <nav class="mainnav">
+    <a class="navlink" href="index.html">📚 Library</a>
+    <a class="navlink active" href="bands.html">🎸 Bands</a>
+    <a class="navlink" href="legacy-setlist.html">📋 Band Setlist</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <a class="user-chip" id="userChip" href="profile.html" title="Your profile & settings"></a>
+  <button class="btn ghost" id="signoutBtn" style="display:none">Sign out</button>
+</div>
+
+<div id="gate" class="gate" style="display:none">
+  <h2>Please sign in</h2>
+  <p>Open the <a href="index.html">library</a> and sign in with Google to view this band.</p>
+</div>
+
+<div class="loading" id="loading">Loading…</div>
+
+<div id="content" style="display:none">
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <a class="back-link" href="bands.html">← All bands</a>
+        <div class="band-title" id="bandTitle">Band</div>
+        <div class="band-desc" id="bandDesc"></div>
+      </div>
+      <div class="hero-spacer"></div>
+      <button class="btn ghost sm" id="settingsToggle">⚙ Band settings</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- Settings (collapsed) -->
+    <div class="panel" id="settingsPanel" style="display:none">
+      <div class="panel-header"><span>⚙</span> Band Settings</div>
+      <div class="panel-body settings-body" id="settingsBody">
+        <div class="members-row" id="membersRow"></div>
+        <div class="settings-grid">
+          <div><label class="field-label">Band Name</label><input class="text-input" id="setName" type="text" maxlength="80"></div>
+          <div><label class="field-label">Your Role</label><input class="text-input" id="setRole" type="text" maxlength="80" placeholder="e.g. Lead guitar"></div>
+        </div>
+        <div style="margin-bottom:12px"><label class="field-label">Description</label><input class="text-input" id="setDesc" type="text" maxlength="140"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="saveSettingsBtn">Save Changes</button>
+          <button class="btn ghost" id="deleteBandBtn" style="border-color:rgba(139,58,26,0.4); color:#c0603a;">Delete Band</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Repertoire -->
+    <div class="panel">
+      <div class="panel-header"><span>🎶</span> Repertoire <span class="count" id="repCount"></span></div>
+      <div class="panel-body">
+        <div class="add-tools">
+          <button class="btn" id="fromLibBtn">＋ From my Library</button>
+          <button class="btn ghost" id="manualBtn">＋ Add manually</button>
+        </div>
+
+        <!-- Library picker -->
+        <div class="lib-picker hidden" id="libPicker">
+          <div class="lib-picker-head">
+            <input class="text-input" id="libSearch" type="text" placeholder="Filter your library…" autocomplete="off">
+          </div>
+          <div class="lib-picker-list" id="libList"></div>
+        </div>
+
+        <!-- Manual add -->
+        <div class="manual-add hidden" id="manualAdd">
+          <div class="ma-field ma-title"><label class="field-label">Song</label><input class="text-input" id="mTitle" type="text" placeholder="Title"></div>
+          <div class="ma-field ma-artist"><label class="field-label">Artist</label><input class="text-input" id="mArtist" type="text" placeholder="Artist"></div>
+          <div class="ma-field ma-key"><label class="field-label">Key</label><input class="text-input" id="mKey" type="text" maxlength="4" placeholder="—"></div>
+          <button class="btn" id="mAddBtn" style="height:36px">Add</button>
+        </div>
+
+        <div class="song-list" id="repList"></div>
+      </div>
+    </div>
+
+    <!-- Setlists (next pass) -->
+    <div class="panel">
+      <div class="panel-header"><span>📋</span> Setlists</div>
+      <div class="panel-body">
+        <div class="soon-note">
+          🎤 Setlists are coming next — you'll build a running order for a gig from this repertoire,<br>
+          split it into sets, and pull up a clean stage view to practice or perform from.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { auth, db } from './firebase-init.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, updateDoc, deleteDoc, collection, addDoc, getDocs, onSnapshot,
+         query, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const bandId = params.get('id') || '';
+let user = null;
+let band = null;
+let repUnsub = null;
+let repCache = [];
+let libraryCache = [];
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
+function bandDoc() { return doc(db, 'bands', bandId); }
+function repCol() { return collection(db, 'bands', bandId, 'repertoire'); }
+function repDoc(id) { return doc(db, 'bands', bandId, 'repertoire', id); }
+
+function ytLink(s) { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function spLink(s) { return s.spotify || 'https://open.spotify.com/search/' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+function apLink(s) { return s.apple   || 'https://music.apple.com/us/search?term=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+
+$('signoutBtn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async u => {
+  user = u;
+  if (repUnsub) { repUnsub(); repUnsub = null; }
+  if (!u) {
+    $('gate').style.display = 'block'; $('loading').style.display = 'none'; $('content').style.display = 'none';
+    $('userChip').innerHTML = ''; $('signoutBtn').style.display = 'none';
+    return;
+  }
+  $('gate').style.display = 'none';
+  $('signoutBtn').style.display = '';
+  $('userChip').innerHTML = `${u.photoURL ? `<img src="${esc(u.photoURL)}" alt="">` : ''}<span class="uname">${esc(u.displayName || u.email)}</span>`;
+  await loadBand();
+});
+
+async function loadBand() {
+  if (!bandId) { $('loading').textContent = 'No band specified.'; return; }
+  let snap;
+  try { snap = await getDoc(bandDoc()); }
+  catch (e) { $('loading').textContent = 'Could not open this band: ' + (e.code || e.message); return; }
+  if (!snap.exists()) { $('loading').innerHTML = 'Band not found. <a href="bands.html">Back to bands</a>'; return; }
+  band = { id: snap.id, ...snap.data() };
+
+  $('bandTitle').textContent = band.name || 'Untitled band';
+  $('bandDesc').textContent = band.description || '';
+  document.title = (band.name || 'Band') + ' — The Setlist Book';
+  renderMembers();
+  $('setName').value = band.name || '';
+  $('setDesc').value = band.description || '';
+  $('setRole').value = (band.members && band.members[user.uid] && band.members[user.uid].role) || '';
+
+  $('loading').style.display = 'none';
+  $('content').style.display = 'block';
+
+  // Live repertoire
+  repUnsub = onSnapshot(query(repCol()), snap2 => {
+    repCache = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+    repCache.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    renderRepertoire();
+    if (!$('libPicker').classList.contains('hidden')) renderLibPicker($('libSearch').value);
+  }, err => toast('Repertoire error: ' + err.message));
+}
+
+function renderMembers() {
+  const row = $('membersRow');
+  row.innerHTML = '';
+  const members = band.members || {};
+  Object.keys(members).forEach(uid => {
+    const m = members[uid];
+    const chip = document.createElement('span');
+    chip.className = 'member-chip';
+    chip.textContent = (m.name || 'Member') + (m.role ? ' · ' + m.role : '');
+    row.appendChild(chip);
+  });
+}
+
+// ── Repertoire render ──
+function renderRepertoire() {
+  $('repCount').textContent = repCache.length + (repCache.length === 1 ? ' song' : ' songs');
+  const list = $('repList');
+  list.innerHTML = '';
+  if (!repCache.length) {
+    const e = document.createElement('div');
+    e.className = 'empty-state';
+    e.innerHTML = `<div class="big">🎶</div><p>No songs yet. Add from your library or enter one manually.</p>`;
+    list.appendChild(e);
+    return;
+  }
+  repCache.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'song-row';
+    row.innerHTML = `
+      <div class="song-main">
+        <div class="song-title">${esc(s.title)}</div>
+        <div class="song-artist">${esc(s.artist || '—')}</div>
+      </div>
+      <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
+      <div class="link-icons">
+        <a class="lnk yt" href="${esc(ytLink(s))}" target="_blank" title="YouTube">▶</a>
+        <a class="lnk sp" href="${esc(spLink(s))}" target="_blank" title="Spotify">♫</a>
+        <a class="lnk ap" href="${esc(apLink(s))}" target="_blank" title="Apple Music"></a>
+      </div>
+      <button class="icon-btn del" title="Remove from band">✕</button>`;
+    const keyInput = row.querySelector('.key-input');
+    keyInput.addEventListener('change', () => updateDoc(repDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
+    row.querySelector('.del').addEventListener('click', () => {
+      if (confirm(`Remove "${s.title}" from ${band.name}'s repertoire?`)) deleteDoc(repDoc(s.id));
+    });
+    list.appendChild(row);
+  });
+}
+
+function repHas(title, artist) {
+  const t = (title || '').toLowerCase(), a = (artist || '').toLowerCase();
+  return repCache.some(s => (s.title || '').toLowerCase() === t && (s.artist || '').toLowerCase() === a);
+}
+
+// ── Add from library ──
+$('fromLibBtn').addEventListener('click', async () => {
+  $('manualAdd').classList.add('hidden');
+  const picker = $('libPicker');
+  if (!picker.classList.contains('hidden')) { picker.classList.add('hidden'); return; }
+  picker.classList.remove('hidden');
+  $('libList').innerHTML = '<div class="soon-note">Loading your library…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'users', user.uid, 'songs'));
+    libraryCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    libraryCache.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  } catch (e) { $('libList').innerHTML = `<div class="soon-note">Could not load library: ${esc(e.code||e.message)}</div>`; return; }
+  renderLibPicker('');
+  $('libSearch').focus();
+});
+$('libSearch').addEventListener('input', () => renderLibPicker($('libSearch').value));
+
+function renderLibPicker(term) {
+  const list = $('libList');
+  const q = (term || '').trim().toLowerCase();
+  const items = libraryCache.filter(s =>
+    !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
+  list.innerHTML = '';
+  if (!libraryCache.length) { list.innerHTML = `<div class="soon-note">Your library is empty. Add songs on the <a href="index.html">Library</a> page first.</div>`; return; }
+  if (!items.length) { list.innerHTML = `<div class="soon-note">No matches.</div>`; return; }
+  items.forEach(s => {
+    const already = repHas(s.title, s.artist);
+    const row = document.createElement('div');
+    row.className = 'lib-pick-row' + (already ? ' added' : '');
+    row.innerHTML = `
+      <div class="lp-main"><div class="lp-title">${esc(s.title)}</div><div class="lp-artist">${esc(s.artist || '—')}</div></div>
+      ${already ? '<span class="member-chip">In repertoire</span>' : '<button class="btn sm">＋ Add</button>'}`;
+    const btn = row.querySelector('button');
+    if (btn) btn.addEventListener('click', () => addFromLibrary(s, btn));
+    list.appendChild(row);
+  });
+}
+
+async function addFromLibrary(s, btn) {
+  if (repHas(s.title, s.artist)) { toast('Already in repertoire'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  try {
+    await addDoc(repCol(), {
+      title: s.title || '', artist: s.artist || '', key: s.key || '',
+      youtube: s.youtube || '', spotify: s.spotify || '', apple: s.apple || '',
+      sourceSongId: s.id, addedBy: user.uid,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    toast('Added to repertoire');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); if (btn) { btn.disabled = false; btn.textContent = '＋ Add'; } }
+}
+
+// ── Manual add ──
+$('manualBtn').addEventListener('click', () => {
+  $('libPicker').classList.add('hidden');
+  const m = $('manualAdd');
+  m.classList.toggle('hidden');
+  if (!m.classList.contains('hidden')) $('mTitle').focus();
+});
+$('mKey').addEventListener('keydown', e => { if (e.key === 'Enter') manualAdd(); });
+$('mTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('mArtist').focus(); });
+$('mAddBtn').addEventListener('click', manualAdd);
+
+async function manualAdd() {
+  const title = $('mTitle').value.trim();
+  if (!title) { toast('Enter a song title'); $('mTitle').focus(); return; }
+  const artist = $('mArtist').value.trim();
+  if (repHas(title, artist)) { toast('Already in repertoire'); return; }
+  try {
+    await addDoc(repCol(), {
+      title, artist, key: $('mKey').value.trim(),
+      youtube: '', spotify: '', apple: '', addedBy: user.uid,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    $('mTitle').value = ''; $('mArtist').value = ''; $('mKey').value = '';
+    $('mTitle').focus();
+    toast('Added to repertoire');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
+}
+
+// ── Settings ──
+$('settingsToggle').addEventListener('click', () => {
+  const p = $('settingsPanel');
+  const showing = p.style.display !== 'none';
+  p.style.display = showing ? 'none' : 'block';
+  $('settingsBody').classList.toggle('show', !showing);
+});
+$('saveSettingsBtn').addEventListener('click', async () => {
+  const name = $('setName').value.trim();
+  if (!name) { toast('Band needs a name'); return; }
+  try {
+    await updateDoc(bandDoc(), {
+      name,
+      description: $('setDesc').value.trim(),
+      [`members.${user.uid}.role`]: $('setRole').value.trim(),
+      [`members.${user.uid}.name`]: user.displayName || user.email || '',
+      updatedAt: serverTimestamp()
+    });
+    band.name = name; band.description = $('setDesc').value.trim();
+    if (!band.members) band.members = {};
+    band.members[user.uid] = { ...(band.members[user.uid] || {}), role: $('setRole').value.trim(), name: user.displayName || user.email || '' };
+    $('bandTitle').textContent = name;
+    $('bandDesc').textContent = band.description;
+    renderMembers();
+    toast('Saved');
+  } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
+});
+$('deleteBandBtn').addEventListener('click', async () => {
+  if (!confirm(`Delete "${band.name}"? This removes the band and its repertoire for everyone. This cannot be undone.`)) return;
+  try { await deleteDoc(bandDoc()); location.href = 'bands.html'; }
+  catch (e) { toast('Delete failed: ' + (e.code || e.message)); }
+});
+</script>
+</body>
+</html>
