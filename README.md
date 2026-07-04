@@ -17,7 +17,7 @@ A static HTML/JS band setlist manager. No frameworks, no build step — open `in
 
 ## Usage
 Just open `index.html` in your browser. For GitHub Pages, it'll be live at:
-`https://mdvolkjr.github.io/band-setlist/`
+`https://mdvolkjr.github.io/setlist-to-stage/`
 
 ## Files
 - `index.html` — Main setlist with all 3 sets

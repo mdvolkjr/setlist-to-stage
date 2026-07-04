@@ -564,11 +564,18 @@ function initBandName() {
 }
 
 // ── Save all setlist data ──
+// Merge into existing storage so per-song detail data saved from song.html
+// (notes, tempo, structure, perfs, extra tab links, …) is never clobbered.
 function saveAll(fromFloat) {
-  const data = {};
+  const data = loadData();
   document.querySelectorAll('[data-key]').forEach(el => {
-    const val = el.type === 'checkbox' ? el.checked : el.value.trim();
-    if (val !== false && val !== '') data[el.dataset.key] = val;
+    const key = el.dataset.key;
+    if (el.type === 'checkbox') {
+      if (el.checked) data[key] = true; else delete data[key];
+    } else {
+      const val = el.value.trim();
+      if (val) data[key] = val; else delete data[key];
+    }
   });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
