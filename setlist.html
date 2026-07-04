@@ -202,6 +202,7 @@
     .ps-set { text-align: center; font-family: 'Special Elite', cursive; font-size: 12pt; letter-spacing: 0.1em; text-transform: uppercase; margin: 0.2in 0 0.06in; color: #000; break-after: avoid; }
     .ps-list { list-style: none; margin: 0; padding: 0; }
     .ps-list li { break-inside: avoid; }
+    .ps-setblock + .ps-setblock { break-before: page; }   /* each set starts a new page */
     .psheet.classic .ps-list li { text-align: center; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 23pt; line-height: 1.55; text-transform: uppercase; letter-spacing: 0.02em; }
     .psheet.classic .ps-artist, .psheet.classic .ps-key { display: none; }
     .psheet.list .ps-list li { font-size: 14pt; line-height: 1.7; }
@@ -864,6 +865,7 @@ function buildPrintSheet(format) {
   let html = `<div class="psheet ${format}">`;
   html += `<div class="ps-head"><div class="ps-title">${esc(setlist.name || 'Setlist')}</div>${subParts.length ? `<div class="ps-sub">${subParts.join(' · ')}</div>` : ''}</div>`;
   setlist.sets.forEach((set, si) => {
+    html += '<div class="ps-setblock">';
     if (setlist.sets.length > 1) html += `<div class="ps-set">${esc(set.title || ('Set ' + (si + 1)))}</div>`;
     html += '<ul class="ps-list">';
     (set.songIds || []).forEach(sid => {
@@ -875,7 +877,7 @@ function buildPrintSheet(format) {
       }
       html += `<li>${line}</li>`;
     });
-    html += '</ul>';
+    html += '</ul></div>';
   });
   html += '</div>';
   $('printSheet').innerHTML = html;

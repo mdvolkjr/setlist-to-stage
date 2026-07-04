@@ -122,6 +122,18 @@
   .c-title { flex: 1.6 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .c-artist { flex: 1.1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* Library status tabs + controls */
+  .lib-tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; position: sticky; top: 52px; z-index: 20; background: var(--cream); padding: 8px 0; }
+  .lib-tab { font-family: 'Special Elite', cursive; font-size: 0.76rem; letter-spacing: 0.04em; color: var(--faded); background: var(--parchment); border: 1px solid var(--tan); border-radius: 16px; padding: 8px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background 0.15s, color 0.15s; }
+  .lib-tab:hover { color: var(--brown); }
+  .lib-tab.active { background: var(--brown); color: var(--cream); box-shadow: 0 2px 8px rgba(74,46,26,0.25); }
+  .lt-count { font-size: 0.64rem; opacity: 0.85; background: rgba(0,0,0,0.12); padding: 1px 6px; border-radius: 8px; }
+  .lib-tab.active .lt-count { background: rgba(255,255,255,0.18); }
+  .lib-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 720px; margin: 0 auto 20px; flex-wrap: wrap; }
+  .lib-tools { display: flex; gap: 6px; }
+  .status-sel { flex-shrink: 0; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.03em; color: var(--ink); padding: 5px 4px; cursor: pointer; max-width: 96px; }
+  .status-sel:focus { border-color: var(--rust); outline: none; }
+
   /* ── Inline edit ── */
   .song-item { display: flex; flex-direction: column; }
   .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
@@ -319,37 +331,32 @@
     <div class="suggest-box" id="suggestBox"></div>
   </div>
 
-  <!-- Filter existing library -->
+  <!-- Status tabs -->
+  <div class="lib-tabs">
+    <button class="lib-tab active" data-status="all">All Songs <span class="lt-count" id="cntAll"></span></button>
+    <button class="lib-tab" data-status="learning">Learning <span class="lt-count" id="cntLearning"></span></button>
+    <button class="lib-tab" data-status="repertoire">Repertoire <span class="lt-count" id="cntRepertoire"></span></button>
+    <button class="lib-tab" data-status="known">Know It Well <span class="lt-count" id="cntKnown"></span></button>
+  </div>
+
+  <!-- Filter + controls -->
   <div class="filter-bar">
-    <input type="text" id="libFilter" placeholder="🔍 Filter your library — find a song fast…" autocomplete="off">
+    <input type="text" id="libFilter" placeholder="🔍 Filter — find a song fast…" autocomplete="off">
     <button class="filter-clear" id="libFilterClear" title="Clear" style="display:none">✕</button>
   </div>
-
-  <div class="sort-bar">
-    <span class="sort-lbl">Sort</span>
-    <button class="sort-btn active" data-sort="title">Song <span class="ar">▲</span></button>
-    <button class="sort-btn" data-sort="artist">Artist <span class="ar"></span></button>
-  </div>
-
-  <!-- Learning -->
-  <div class="lib-section">
-    <div class="section-head">
-      <h2>Learning</h2>
-      <span class="badge learning">Practice</span>
-      <span class="count" id="learningCount"></span>
+  <div class="lib-controls">
+    <div class="sort-bar">
+      <span class="sort-lbl">Sort</span>
+      <button class="sort-btn active" data-sort="title">Song <span class="ar">▲</span></button>
+      <button class="sort-btn" data-sort="artist">Artist <span class="ar"></span></button>
     </div>
-    <div class="song-list" id="learningList"></div>
+    <div class="lib-tools">
+      <button class="btn sm" id="playAllBtn" title="Open these songs as a YouTube playlist">▶ Play all</button>
+      <button class="btn sm ghost" id="copyListBtn" title="Copy this list as text">⧉ Copy list</button>
+    </div>
   </div>
 
-  <!-- Repertoire -->
-  <div class="lib-section">
-    <div class="section-head">
-      <h2>Repertoire</h2>
-      <span class="badge learned">Know it well</span>
-      <span class="count" id="learnedCount"></span>
-    </div>
-    <div class="song-list" id="learnedList"></div>
-  </div>
+  <div class="song-list" id="songList"></div>
 </div>
 
 <div class="loading" id="loading">Loading…</div>
@@ -392,6 +399,7 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, d
          serverTimestamp, getDocs, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { parseSongList, markDuplicates } from './lib/import.js';
+import { ytIdsFromSongs, buildYouTubePlaylistUrl, orderedListText } from './lib/playlist.js';
 
 let currentUser = null;
 let songsUnsub  = null;
@@ -400,6 +408,7 @@ let editingId   = null;   // row currently open for inline editing (suppresses r
 let filterTerm  = '';     // library filter text
 let sortKey     = 'title';
 let sortDir     = 1;      // 1 = asc, -1 = desc
+let statusTab   = 'all';  // all | learning | repertoire | known
 
 // ── Utilities ──
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -481,48 +490,58 @@ function sortSongs(arr) {
     return at < bt ? -1 : at > bt ? 1 : 0;
   });
 }
-function renderLibrary() {
-  const learning = sortSongs(songsCache.filter(s => s.status !== 'learned' && libMatch(s)));
-  const learned  = sortSongs(songsCache.filter(s => s.status === 'learned' && libMatch(s)));
-  renderSection('learningList', 'learningCount', learning, true);
-  renderSection('learnedList', 'learnedCount', learned, false);
+function statusOf(s) {
+  const st = s.status || 'learning';
+  if (st === 'known') return 'known';
+  if (st === 'learned' || st === 'repertoire') return 'repertoire';
+  return 'learning';
 }
+function tabLabel(t) { return t === 'learning' ? 'Learning' : t === 'repertoire' ? 'Repertoire' : t === 'known' ? 'Know It Well' : 'your library'; }
+function currentSongs() {
+  return sortSongs(songsCache.filter(s => libMatch(s) && (statusTab === 'all' || statusOf(s) === statusTab)));
+}
+function renderLibrary() {
+  let cL = 0, cR = 0, cK = 0;
+  songsCache.forEach(s => { const st = statusOf(s); if (st === 'learning') cL++; else if (st === 'repertoire') cR++; else cK++; });
+  document.getElementById('cntAll').textContent = songsCache.length;
+  document.getElementById('cntLearning').textContent = cL;
+  document.getElementById('cntRepertoire').textContent = cR;
+  document.getElementById('cntKnown').textContent = cK;
 
-function renderSection(listId, countId, songs, isLearning) {
-  const list = document.getElementById(listId);
-  document.getElementById(countId).textContent = songs.length + (songs.length === 1 ? ' song' : ' songs');
+  const songs = currentSongs();
+  const list = document.getElementById('songList');
   list.innerHTML = '';
-
   if (!songs.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    const filtering = filterTerm.trim().length > 0;
-    if (filtering) {
-      empty.innerHTML = `<p>No ${isLearning ? 'practice' : 'known'} songs match “${esc(filterTerm.trim())}”.</p>`;
-    } else if (isLearning && songsCache.length === 0) {
+    if (songsCache.length === 0) {
       empty.innerHTML = `<div class="big">🎸</div><p>Your library is empty. Search for a song above to start —<br>or bring in the classic 44-song book.</p>
         <button class="btn" id="importBtn">Import 44 starter songs</button>`;
+    } else if (filterTerm.trim()) {
+      empty.innerHTML = `<p>No songs match “${esc(filterTerm.trim())}”.</p>`;
     } else {
-      empty.innerHTML = isLearning
-        ? `<p>Nothing in practice right now. Nice.</p>`
-        : `<p>No songs marked as known yet. Tick the circle when you've got one down.</p>`;
+      empty.innerHTML = `<p>Nothing in “${esc(tabLabel(statusTab))}” yet.</p>`;
     }
     list.appendChild(empty);
     const ib = empty.querySelector('#importBtn');
     if (ib) ib.addEventListener('click', importStarter);
     return;
   }
-
   songs.forEach(s => list.appendChild(songRow(s)));
 }
 
 function songRow(s) {
   const editing = editingId === s.id;
+  const st = statusOf(s);
   const item = document.createElement('div');
   item.className = 'song-item' + (editing ? ' editing' : '');
   item.innerHTML = `
-    <div class="song-row${s.status === 'learned' ? ' done' : ''}">
-      <button class="learn-toggle ${s.status === 'learned' ? 'done' : ''}" title="Mark as ${s.status === 'learned' ? 'still learning' : 'known'}">${s.status === 'learned' ? '✓' : ''}</button>
+    <div class="song-row${st === 'known' ? ' done' : ''}">
+      <select class="status-sel" title="Set this song's status">
+        <option value="learning" ${st === 'learning' ? 'selected' : ''}>Learning</option>
+        <option value="repertoire" ${st === 'repertoire' ? 'selected' : ''}>Repertoire</option>
+        <option value="known" ${st === 'known' ? 'selected' : ''}>Know It</option>
+      </select>
       <div class="song-cols">
         <div class="song-title c-title">${esc(s.title)}</div>
         <div class="song-artist c-artist">${esc(s.artist || '—')}</div>
@@ -548,12 +567,12 @@ function songRow(s) {
         <label>Spotify URL<input data-f="spotify" placeholder="Optional" value="${esc(s.spotify || '')}"></label>
         <label>Apple Music URL<input data-f="apple" placeholder="Optional" value="${esc(s.apple || '')}"></label>
       </div>
-      <div class="edit-actions"><span class="edit-saved">Saved ✓</span><button class="btn sm edit-done">Done</button></div>
+      <div class="edit-actions"><span class="edit-saved">Saved ✓</span><button class="btn sm edit-save">Save</button></div>
     </div>`;
 
   const row = item.querySelector('.song-row');
-  row.querySelector('.learn-toggle').addEventListener('click', () =>
-    updateDoc(songDoc(s.id), { status: s.status === 'learned' ? 'learning' : 'learned', updatedAt: serverTimestamp() }));
+  row.querySelector('.status-sel').addEventListener('change', e =>
+    updateDoc(songDoc(s.id), { status: e.target.value, updatedAt: serverTimestamp() }));
 
   const keyInput = row.querySelector('.key-input');
   keyInput.addEventListener('change', () =>
@@ -596,7 +615,20 @@ function songRow(s) {
       } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
     });
   });
-  editPanel.querySelector('.edit-done').addEventListener('click', () => { editingId = null; renderLibrary(); });
+  // Save = commit every field (even un-blurred ones) so a follow-up search uses fresh data, then close.
+  editPanel.querySelector('.edit-save').addEventListener('click', async () => {
+    const upd = { updatedAt: serverTimestamp() };
+    editPanel.querySelectorAll('input[data-f]').forEach(inp => {
+      const f = inp.dataset.f;
+      let val = inp.value.trim();
+      if (f === 'youtube') val = normYouTube(inp.value);
+      else if (f === 'spotify' || f === 'apple') val = normUrl(inp.value);
+      upd[f] = val; s[f] = val;
+    });
+    try { await updateDoc(songDoc(s.id), upd); }
+    catch (e) { toast('Save failed: ' + (e.code || e.message)); return; }
+    editingId = null; renderLibrary();
+  });
 
   return item;
 }
@@ -646,6 +678,29 @@ libFilter.addEventListener('input', () => {
 libFilterClear.addEventListener('click', () => {
   libFilter.value = ''; filterTerm = ''; libFilterClear.style.display = 'none';
   renderLibrary(); libFilter.focus();
+});
+
+// ── Status tabs ──
+document.querySelectorAll('.lib-tab').forEach(t => t.addEventListener('click', () => {
+  statusTab = t.dataset.status;
+  document.querySelectorAll('.lib-tab').forEach(b => b.classList.toggle('active', b === t));
+  if (!editingId) renderLibrary();
+}));
+
+// ── Play all / Copy (whatever's showing) ──
+document.getElementById('playAllBtn').addEventListener('click', () => {
+  const songs = currentSongs();
+  const ids = ytIdsFromSongs(songs);
+  const url = buildYouTubePlaylistUrl(ids);
+  if (!url) { toast('No YouTube links in this view'); return; }
+  if (ids.length < songs.length) toast(`${ids.length} of ${songs.length} have a YouTube link`);
+  window.open(url, '_blank');
+});
+document.getElementById('copyListBtn').addEventListener('click', async () => {
+  const text = orderedListText(currentSongs());
+  if (!text) { toast('Nothing to copy'); return; }
+  try { await navigator.clipboard.writeText(text); toast('Song list copied'); }
+  catch { toast('Copy failed'); }
 });
 
 // ── Sort ──
