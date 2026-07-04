@@ -1,0 +1,49 @@
+name: Deploy to Firebase
+
+# Auto-deploys hosting + Firestore/Storage security rules on every push to main.
+# Requires one repo secret: FIREBASE_SERVICE_ACCOUNT
+#   (a service-account JSON key with the "Firebase Admin" role — see README).
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:        # lets you trigger a deploy manually from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Write service-account credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+
+      # Hosting + Firestore rules always ship (Firestore just needs a database created).
+      - name: Deploy hosting + Firestore rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          firebase deploy \
+            --project setlist-to-stage \
+            --only hosting,firestore:rules \
+            --non-interactive
+
+      # Storage rules need Storage enabled (Blaze plan). Don't fail the whole
+      # deploy if it isn't set up yet — hosting is already live above.
+      - name: Deploy Storage rules (needs Storage/Blaze enabled)
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          firebase deploy \
+            --project setlist-to-stage \
+            --only storage \
+            --non-interactive

@@ -47,6 +47,21 @@ pass — rules for `bands/{bandId}` are already stubbed in `firestore.rules`.
 
 ## Deploy
 
+### Automatic (GitHub Actions)
+
+`.github/workflows/firebase-deploy.yml` deploys hosting + Firestore/Storage rules
+on every push to `main`. One-time setup:
+
+1. **Create a service-account key:** Firebase Console → ⚙️ Project settings →
+   **Service accounts** → **Generate new private key**. (This grants the Firebase
+   Admin role.) A JSON file downloads.
+2. **Add it to GitHub:** repo → **Settings → Secrets and variables → Actions →
+   New repository secret**. Name it `FIREBASE_SERVICE_ACCOUNT`, and paste the
+   entire contents of that JSON file as the value.
+3. Push to `main` (or run the workflow manually from the **Actions** tab). Done.
+
+### Manual (Firebase CLI)
+
 With the [Firebase CLI](https://firebase.google.com/docs/cli) installed and
 `firebase login` done once:
 
