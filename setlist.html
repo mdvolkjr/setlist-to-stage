@@ -84,8 +84,12 @@
   .set-del:hover { background: rgba(139,58,26,0.5); color: #fff; }
   .set-songs { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
   .sl-song { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; }
+  .sl-song.dragging { opacity: 0.4; }
+  .sl-song.drop-above { box-shadow: inset 0 3px 0 0 var(--rust); }
+  .sl-song.drop-below { box-shadow: inset 0 -3px 0 0 var(--rust); }
   .sl-num { font-family: 'Special Elite', cursive; color: var(--faded); font-size: 0.8rem; width: 22px; text-align: center; flex-shrink: 0; }
-  .sl-song-main { flex: 1; min-width: 0; }
+  .sl-song-main { flex: 1; min-width: 0; cursor: grab; }
+  .sl-song-main:active { cursor: grabbing; }
   .sl-song-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.9rem; }
   .sl-song-title.missing { color: var(--faded); font-style: italic; font-weight: 400; }
   .sl-song-artist { font-size: 0.73rem; color: var(--faded); font-style: italic; }
@@ -208,6 +212,7 @@
       <button class="btn ghost" id="practiceBtn">🎯 Practice</button>
       <button class="btn ghost" id="exportBtn">▶ Export</button>
       <button class="btn ghost" id="notifyBtn">📣 Notify Bandmates</button>
+      <button class="btn ghost" id="dupBtn">⧉ Duplicate</button>
     </div>
 
     <div class="export-panel" id="exportPanel">
@@ -357,6 +362,25 @@ $('slDateInput').addEventListener('change', () => {
 
 // ── Render editor ──
 let addToSetIndex = null;   // which set the picker is docked under (null = top)
+let dragSrc = null;         // {si, pos} of the song being dragged
+
+function doDrop(targetSi, targetIndex) {
+  if (!dragSrc) return;
+  const fromSi = dragSrc.si, fromPos = dragSrc.pos;
+  dragSrc = null;
+  const arr = setlist.sets[fromSi] && setlist.sets[fromSi].songIds;
+  if (!arr || fromPos >= arr.length) { clearDropMarks(); return; }
+  const [sid] = arr.splice(fromPos, 1);
+  let idx = targetIndex;
+  if (fromSi === targetSi && fromPos < targetIndex) idx--;   // account for the removal shift
+  const tarr = setlist.sets[targetSi].songIds;
+  idx = Math.max(0, Math.min(idx, tarr.length));
+  tarr.splice(idx, 0, sid);
+  saveSets(); render();
+}
+function clearDropMarks() {
+  document.querySelectorAll('.sl-song.drop-above, .sl-song.drop-below').forEach(el => el.classList.remove('drop-above', 'drop-below'));
+}
 
 function render() {
   renderTargetOptions();
@@ -413,6 +437,9 @@ function setBlock(set, si) {
   } else {
     songIds.forEach((sid, pos) => songsEl.appendChild(songRow(sid, si, pos)));
   }
+  // Drop into empty space / end of this set
+  songsEl.addEventListener('dragover', e => { if (dragSrc) e.preventDefault(); });
+  songsEl.addEventListener('drop', e => { if (!dragSrc) return; e.preventDefault(); doDrop(si, setlist.sets[si].songIds.length); });
   return block;
 }
 
@@ -449,6 +476,31 @@ function songRow(sid, si, pos) {
     setlist.sets[si].songIds.splice(pos, 1);
     setlist.sets[target].songIds.push(sid);
     saveSets(); render();
+  });
+
+  // Drag-and-drop reorder (desktop; the ▲▼ arrows and set dropdown stay for touch)
+  row.setAttribute('draggable', 'true');
+  row.addEventListener('dragstart', e => {
+    dragSrc = { si, pos };
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', sid); } catch {}
+    row.classList.add('dragging');
+  });
+  row.addEventListener('dragend', () => { row.classList.remove('dragging'); clearDropMarks(); dragSrc = null; });
+  row.addEventListener('dragover', e => {
+    if (!dragSrc) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    const r = row.getBoundingClientRect();
+    clearDropMarks();
+    row.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-above' : 'drop-below');
+  });
+  row.addEventListener('dragleave', () => row.classList.remove('drop-above', 'drop-below'));
+  row.addEventListener('drop', e => {
+    if (!dragSrc) return;
+    e.preventDefault(); e.stopPropagation();
+    const r = row.getBoundingClientRect();
+    const before = e.clientY < r.top + r.height / 2;
+    doDrop(si, before ? pos : pos + 1);
   });
   return row;
 }
@@ -596,6 +648,21 @@ async function addNewSong(titleArg, artistArg) {
   } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
   finally { btn.disabled = false; }
 }
+
+// ── Duplicate this setlist ──
+$('dupBtn').addEventListener('click', async () => {
+  try {
+    const ref = await addDoc(collection(db, 'bands', bandId, 'setlists'), {
+      name: (setlist.name || 'Setlist') + ' (copy)',
+      gigDate: '',
+      sets: setlist.sets.map(s => ({ title: s.title || 'Set', songIds: [...(s.songIds || [])] })),
+      createdBy: user.uid,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    toast('Duplicated — opening the copy…');
+    location.href = 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(ref.id);
+  } catch (e) { toast('Duplicate failed: ' + (e.code || e.message)); }
+});
 
 // ── Notify bandmates (share this setlist) ──
 function shareText() {

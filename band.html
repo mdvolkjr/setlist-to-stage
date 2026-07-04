@@ -116,6 +116,8 @@
   .icon-btn { width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
   .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
   .icon-btn.del:hover { background: var(--rust); color: white; }
+  .icon-btn.dup { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
+  .icon-btn.dup:hover { background: var(--brown); color: var(--cream); }
   .icon-btn.edit { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
   .icon-btn.edit:hover, .icon-btn.edit.on { background: var(--brown); color: var(--cream); }
   .lnk.search { opacity: 0.42; }
@@ -741,12 +743,27 @@ function renderSetlists() {
         <div class="song-artist">${sl.gigDate ? esc(fmtDate(sl.gigDate)) + ' · ' : ''}${n} song${n === 1 ? '' : 's'}</div>
       </div>
       <a class="btn sm" href="setlist.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sl.id)}">Open ▸</a>
+      <button class="icon-btn dup" title="Duplicate setlist">⧉</button>
       <button class="icon-btn del" title="Delete setlist">✕</button>`;
+    row.querySelector('.dup').addEventListener('click', () => duplicateSetlist(sl));
     row.querySelector('.del').addEventListener('click', () => {
       if (confirm(`Delete setlist "${sl.name || 'Untitled'}"?`)) deleteDoc(doc(db, 'bands', bandId, 'setlists', sl.id));
     });
     list.appendChild(row);
   });
+}
+
+async function duplicateSetlist(sl) {
+  try {
+    await addDoc(setlistsCol(), {
+      name: (sl.name || 'Setlist') + ' (copy)',
+      gigDate: '',
+      sets: (sl.sets || []).map(s => ({ title: s.title || 'Set', songIds: [...(s.songIds || [])] })),
+      createdBy: user.uid,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    toast('Setlist duplicated');
+  } catch (e) { toast('Duplicate failed: ' + (e.code || e.message)); }
 }
 
 $('newSetlistBtn').addEventListener('click', () => {
