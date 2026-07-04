@@ -101,6 +101,9 @@
   .sl-rm { width: 26px; height: 26px; border-radius: 3px; border: 1px solid rgba(139,58,26,0.2); background: rgba(139,58,26,0.1); color: var(--rust); cursor: pointer; font-size: 12px; flex-shrink: 0; }
   .sl-rm:hover { background: var(--rust); color: #fff; }
   .set-empty { text-align: center; color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; padding: 12px; }
+  .set-add-btn { display: block; width: calc(100% - 16px); margin: 0 8px 10px; padding: 8px; background: rgba(74,46,26,0.06); border: 1px dashed var(--tan); border-radius: 3px; cursor: pointer; font-family: 'Special Elite', cursive; font-size: 0.68rem; letter-spacing: 0.06em; color: var(--brown); transition: background 0.15s; }
+  .set-add-btn:hover { background: rgba(74,46,26,0.13); }
+  .set-block .picker { margin: 0 8px 12px; max-width: none; }
 
   .add-set-btn { display: block; margin: 0 auto 10px; }
 
@@ -214,22 +217,24 @@
       <div class="export-hint" id="exportHint">YouTube plays the setlist in order — no login. Spotify/Apple: copy the list and paste into search.</div>
     </div>
 
-    <!-- Picker -->
-    <div class="picker" id="picker">
-      <div class="picker-head">
-        <input type="text" id="pickSearch" placeholder="Filter the band's song list…" autocomplete="off">
-        <span class="picker-label">→</span>
-        <select id="targetSet"></select>
+    <!-- Picker (moves inline under whichever set you're adding to) -->
+    <div id="pickerHome">
+      <div class="picker" id="picker">
+        <div class="picker-head">
+          <input type="text" id="pickSearch" placeholder="Filter the band's song list…" autocomplete="off">
+          <span class="picker-label">→</span>
+          <select id="targetSet"></select>
+        </div>
+        <div class="picker-list" id="pickList"></div>
+        <div class="picker-new">
+          <span class="picker-label">New</span>
+          <input type="text" id="newSongTitle" placeholder="Song not in the list? Type a title to search…" autocomplete="off">
+          <input type="text" id="newSongArtist" placeholder="Artist (optional)" autocomplete="off">
+          <button class="btn sm" id="newSongAdd">＋ Add new</button>
+        </div>
+        <div class="new-suggest" id="newSuggest"></div>
+        <div class="picker-new-hint">Pick a suggestion or press “Add new”. Adds it to this setlist, the band's Song List, and your personal Library.</div>
       </div>
-      <div class="picker-list" id="pickList"></div>
-      <div class="picker-new">
-        <span class="picker-label">New</span>
-        <input type="text" id="newSongTitle" placeholder="Song not in the list? Type a title to search…" autocomplete="off">
-        <input type="text" id="newSongArtist" placeholder="Artist (optional)" autocomplete="off">
-        <button class="btn sm" id="newSongAdd">＋ Add new</button>
-      </div>
-      <div class="new-suggest" id="newSuggest"></div>
-      <div class="picker-new-hint">Pick a suggestion or press “Add new”. Adds it to this setlist, the band's Song List, and your personal Library.</div>
     </div>
   </div>
 
@@ -351,12 +356,33 @@ $('slDateInput').addEventListener('change', () => {
 });
 
 // ── Render editor ──
+let addToSetIndex = null;   // which set the picker is docked under (null = top)
+
 function render() {
   renderTargetOptions();
   const cont = $('setsContainer');
+  // Move the picker to its top home before wiping the sets, so it isn't destroyed.
+  $('pickerHome').appendChild($('picker'));
   cont.innerHTML = '';
   setlist.sets.forEach((set, si) => cont.appendChild(setBlock(set, si)));
-  if (!$('picker').classList.contains('hidden') && $('picker').classList.contains('show')) renderPicker($('pickSearch').value);
+  // Re-dock the picker under the active set, if any.
+  if (addToSetIndex != null && addToSetIndex < setlist.sets.length) {
+    const block = cont.querySelectorAll('.set-block')[addToSetIndex];
+    if (block) block.appendChild($('picker'));
+  }
+  if ($('picker').classList.contains('show')) renderPicker($('pickSearch').value);
+}
+
+function openAddForSet(si) {
+  addToSetIndex = si;
+  $('picker').classList.add('show');
+  render();                       // docks the picker inside set si
+  renderTargetOptions();
+  $('targetSet').value = String(si);
+  renderPicker('');
+  $('pickSearch').value = '';
+  $('picker').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('pickSearch').focus();
 }
 
 function setBlock(set, si) {
@@ -369,19 +395,21 @@ function setBlock(set, si) {
       <span class="set-count">${songIds.length} song${songIds.length === 1 ? '' : 's'}</span>
       <button class="set-del" title="Delete set">🗑</button>
     </div>
-    <div class="set-songs"></div>`;
+    <div class="set-songs"></div>
+    <button class="set-add-btn">＋ Add a song to this set</button>`;
   const titleInput = block.querySelector('.set-title-input');
   titleInput.addEventListener('change', () => { setlist.sets[si].title = titleInput.value.trim() || ('Set ' + (si + 1)); saveSets(); });
+  block.querySelector('.set-add-btn').addEventListener('click', () => openAddForSet(si));
   block.querySelector('.set-del').addEventListener('click', () => {
     if (setlist.sets.length === 1) { toast('Keep at least one set'); return; }
     if (confirm(`Delete "${set.title}" and remove its songs from this setlist?`)) {
-      setlist.sets.splice(si, 1); saveSets(); render();
+      setlist.sets.splice(si, 1); addToSetIndex = null; saveSets(); render();
     }
   });
 
   const songsEl = block.querySelector('.set-songs');
   if (!songIds.length) {
-    songsEl.innerHTML = `<div class="set-empty">Empty — use “＋ Add Songs” to fill this set.</div>`;
+    songsEl.innerHTML = `<div class="set-empty">Empty — use the “＋ Add a song to this set” button below.</div>`;
   } else {
     songIds.forEach((sid, pos) => songsEl.appendChild(songRow(sid, si, pos)));
   }
@@ -441,8 +469,11 @@ $('addSetBtn').addEventListener('click', () => {
 // ── Picker ──
 $('addSongBtn').addEventListener('click', () => {
   const p = $('picker');
-  p.classList.toggle('show');
-  if (p.classList.contains('show')) { renderTargetOptions(); renderPicker(''); $('pickSearch').focus(); }
+  const show = !p.classList.contains('show');
+  addToSetIndex = null;      // dock at the top
+  p.classList.toggle('show', show);
+  render();                  // return the picker to its top home
+  if (show) { renderTargetOptions(); renderPicker(''); $('pickSearch').focus(); }
 });
 $('pickSearch').addEventListener('input', () => renderPicker($('pickSearch').value));
 
