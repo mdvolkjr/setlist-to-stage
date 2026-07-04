@@ -165,9 +165,23 @@
   .pr-nav .btn[disabled] { opacity: 0.35; cursor: default; }
 
   /* Nickname + print controls */
-  .sl-nick { width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--line); background: rgba(74,46,26,0.06); color: var(--faded); cursor: pointer; font-size: 12px; flex-shrink: 0; }
+  .sl-nick, .sl-edit { width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--line); background: rgba(74,46,26,0.06); color: var(--faded); cursor: pointer; font-size: 12px; flex-shrink: 0; }
   .sl-nick.on { background: rgba(139,58,26,0.15); border-color: var(--rust); color: var(--rust); }
-  .sl-nick:hover { background: var(--brown); color: var(--cream); }
+  .sl-nick:hover, .sl-edit:hover { background: var(--brown); color: var(--cream); }
+
+  /* Fix-a-song modal */
+  .song-edit-modal { position: fixed; inset: 0; z-index: 620; background: rgba(26,15,6,0.6); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+  .song-edit-modal.show { display: flex; }
+  .sem-card { background: var(--cream); border: 1px solid var(--tan); border-radius: 6px; max-width: 440px; width: 100%; box-shadow: 0 12px 44px rgba(0,0,0,0.4); }
+  .sem-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; background: var(--brown); color: var(--cream); border-radius: 6px 6px 0 0; font-family: 'Special Elite', cursive; letter-spacing: 0.05em; }
+  .sem-x { background: none; border: none; color: var(--tan); font-size: 15px; cursor: pointer; }
+  .sem-x:hover { color: var(--cream); }
+  .sem-body { padding: 16px; }
+  .sem-lbl { font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); display: block; margin: 10px 0 4px; }
+  .sem-input { width: 100%; background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; font-family: 'Libre Baskerville', serif; font-size: 0.88rem; color: var(--ink); outline: none; }
+  .sem-input:focus { border-color: var(--rust); background: #fff; }
+  .sem-note { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.74rem; color: var(--faded); margin: 12px 0; }
+  .sem-actions { display: flex; justify-content: flex-end; gap: 8px; }
   .print-panel { display: none; max-width: 620px; margin: 12px auto 0; padding: 12px 14px; background: var(--parchment); border: 1px solid var(--tan); border-radius: 4px; }
   .print-panel.show { display: block; }
   .pp-lbl { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faded); margin-bottom: 8px; }
@@ -305,6 +319,21 @@
   </div>
 </div>
 
+<!-- Fix-a-song modal -->
+<div class="song-edit-modal" id="songEditModal">
+  <div class="sem-card">
+    <div class="sem-head"><span>✏️ Fix song details</span><button class="sem-x" id="semClose">✕</button></div>
+    <div class="sem-body">
+      <label class="sem-lbl">Title</label><input class="sem-input" id="semTitle" type="text">
+      <label class="sem-lbl">Artist</label><input class="sem-input" id="semArtist" type="text">
+      <label class="sem-lbl">Key</label><input class="sem-input" id="semKey" type="text" maxlength="6">
+      <label class="sem-lbl">YouTube URL <span style="text-transform:none;opacity:0.7;font-style:italic">(or paste a video id)</span></label><input class="sem-input" id="semYt" type="url">
+      <div class="sem-note">This corrects the song for the whole band — the Song List and every setlist it's in.</div>
+      <div class="sem-actions"><button class="btn ghost" id="semCancel">Cancel</button><button class="btn" id="semSave">Save</button></div>
+    </div>
+  </div>
+</div>
+
 <div class="print-sheet" id="printSheet" aria-hidden="true"></div>
 
 <div class="toast" id="toast"></div>
@@ -351,6 +380,27 @@ function editNick(sid) {
   const v = nn.trim();
   if (v) setlist.nicks[sid] = v; else delete setlist.nicks[sid];
   saveNicks(); render();
+}
+
+// Fix a song's actual details (writes to the shared band Song List song)
+let editSid = null;
+function openSongEdit(sid) {
+  const s = songMap[sid];
+  if (!s) return;
+  editSid = sid;
+  $('semTitle').value = s.title || '';
+  $('semArtist').value = s.artist || '';
+  $('semKey').value = s.key || '';
+  $('semYt').value = s.youtube || '';
+  $('songEditModal').classList.add('show');
+  $('semTitle').focus();
+}
+function closeSongEdit() { $('songEditModal').classList.remove('show'); editSid = null; }
+function normYt(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
 }
 
 onAuthStateChanged(auth, async u => {
@@ -515,6 +565,7 @@ function songRow(sid, si, pos) {
     ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
     ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Play saved video' : 'Search YouTube'}">▶</a>` : ''}
     ${s ? `<a class="sl-play sl-search" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube">🔍</a>` : ''}
+    ${s ? `<button class="sl-edit" title="Fix this song's details (title, artist, key, video)">✏️</button>` : ''}
     <button class="sl-nick ${nick ? 'on' : ''}" title="Stage name (nickname) for this song">🏷</button>
     ${setlist.sets.length > 1 ? `<select class="sl-setsel" title="Move to set">${setOptions}</select>` : ''}
     <button class="sl-rm" title="Remove from setlist">✕</button>`;
@@ -523,6 +574,8 @@ function songRow(sid, si, pos) {
   row.querySelector('.mv-dn').addEventListener('click', () => { if (pos < total - 1) { moveWithin(si, pos, pos + 1); } });
   row.querySelector('.sl-rm').addEventListener('click', () => { setlist.sets[si].songIds.splice(pos, 1); saveSets(); render(); });
   row.querySelector('.sl-nick').addEventListener('click', () => editNick(sid));
+  const editBtn = row.querySelector('.sl-edit');
+  if (editBtn) editBtn.addEventListener('click', () => openSongEdit(sid));
   const sel = row.querySelector('.sl-setsel');
   if (sel) sel.addEventListener('change', () => {
     const target = parseInt(sel.value);
@@ -720,15 +773,8 @@ $('dupBtn').addEventListener('click', async () => {
 
 // ── Notify bandmates (share this setlist) ──
 function shareText() {
-  const lines = [`🎸 ${band.name || 'Band'} — ${setlist.name || 'Setlist'}${setlist.gigDate ? ` (${fmtDate(setlist.gigDate)})` : ''}`];
-  setlist.sets.forEach(set => {
-    lines.push('', (set.title || 'Set') + ':');
-    (set.songIds || []).forEach((sid, i) => {
-      const s = songMap[sid];
-      lines.push(`  ${i + 1}. ${displayName(sid)}${s && s.artist ? ` — ${s.artist}` : ''}`);
-    });
-  });
-  return lines.join('\n');
+  // Short by design — a one-liner; the link opens the full, practiceable setlist.
+  return `🎸 ${band.name || 'Band'} — ${setlist.name || 'Setlist'}${setlist.gigDate ? ` (${fmtDate(setlist.gigDate)})` : ''}`;
 }
 $('notifyBtn').addEventListener('click', async () => {
   const url = `${location.origin}/setlist.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(setlistId)}`;
@@ -739,6 +785,23 @@ $('notifyBtn').addEventListener('click', async () => {
   }
   try { await navigator.clipboard.writeText(text + '\n\n▶ Open & practice: ' + url); toast('Setlist copied — paste into a text or email to your band'); }
   catch { prompt('Copy this and send to your band:', text + '\n\n' + url); }
+});
+
+// ── Fix-a-song modal wiring ──
+$('semClose').addEventListener('click', closeSongEdit);
+$('semCancel').addEventListener('click', closeSongEdit);
+$('songEditModal').addEventListener('click', e => { if (e.target === $('songEditModal')) closeSongEdit(); });
+$('semSave').addEventListener('click', async () => {
+  if (!editSid) return;
+  const title = $('semTitle').value.trim();
+  if (!title) { toast('Title is required'); $('semTitle').focus(); return; }
+  const upd = { title, artist: $('semArtist').value.trim(), key: $('semKey').value.trim(), youtube: normYt($('semYt').value), updatedAt: serverTimestamp() };
+  try {
+    await updateDoc(doc(db, 'bands', bandId, 'repertoire', editSid), upd);
+    Object.assign(songMap[editSid], { title: upd.title, artist: upd.artist, key: upd.key, youtube: upd.youtube });
+    closeSongEdit(); render();
+    toast('Song updated everywhere');
+  } catch (e) { toast('Update failed: ' + (e.code || e.message)); }
 });
 
 // ── Stage view ──
