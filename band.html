@@ -145,7 +145,6 @@
   <nav class="mainnav">
     <a class="navlink" href="index.html">📚 Library</a>
     <a class="navlink active" href="bands.html">🎸 Bands</a>
-    <a class="navlink" href="legacy-setlist.html">📋 Band Setlist</a>
   </nav>
   <div class="topbar-spacer"></div>
   <a class="user-chip" id="userChip" href="profile.html" title="Your profile & settings"></a>
@@ -193,7 +192,7 @@
 
     <!-- Repertoire -->
     <div class="panel">
-      <div class="panel-header"><span>🎶</span> Repertoire <span class="count" id="repCount"></span></div>
+      <div class="panel-header"><span>🎶</span> Song List <span class="count" id="repCount"></span></div>
       <div class="panel-body">
         <div class="add-tools">
           <button class="btn" id="fromLibBtn">＋ From my Library</button>
@@ -220,14 +219,20 @@
       </div>
     </div>
 
-    <!-- Setlists (next pass) -->
+    <!-- Setlists -->
     <div class="panel">
-      <div class="panel-header"><span>📋</span> Setlists</div>
+      <div class="panel-header"><span>📋</span> Setlists <span class="count" id="setlistCount"></span></div>
       <div class="panel-body">
-        <div class="soon-note">
-          🎤 Setlists are coming next — you'll build a running order for a gig from this repertoire,<br>
-          split it into sets, and pull up a clean stage view to practice or perform from.
+        <div class="add-tools">
+          <button class="btn" id="newSetlistBtn">＋ New Setlist</button>
         </div>
+        <div class="manual-add hidden" id="setlistForm">
+          <div class="ma-field ma-title"><label class="field-label">Setlist / Gig Name</label><input class="text-input" id="slName" type="text" placeholder="e.g. Saturday @ The Saloon"></div>
+          <div class="ma-field"><label class="field-label">Date <span style="text-transform:none;font-style:italic;opacity:0.7">(optional)</span></label><input class="text-input" id="slDate" type="date"></div>
+          <button class="btn" id="slCreateBtn" style="height:36px">Create</button>
+        </div>
+        <div class="soon-note" id="setlistHint" style="padding:6px 6px 12px;">Build a running order for a gig, split into sets, then open the stage view to practice or perform.</div>
+        <div class="song-list" id="setlistList"></div>
       </div>
     </div>
 
@@ -251,12 +256,15 @@ let band = null;
 let repUnsub = null;
 let repCache = [];
 let libraryCache = [];
+let setlistsUnsub = null;
+let setlistCache = [];
 
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
 function bandDoc() { return doc(db, 'bands', bandId); }
 function repCol() { return collection(db, 'bands', bandId, 'repertoire'); }
 function repDoc(id) { return doc(db, 'bands', bandId, 'repertoire', id); }
+function setlistsCol() { return collection(db, 'bands', bandId, 'setlists'); }
 
 function ytLink(s) { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
 function spLink(s) { return s.spotify || 'https://open.spotify.com/search/' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
@@ -267,6 +275,7 @@ $('signoutBtn').addEventListener('click', () => signOut(auth));
 onAuthStateChanged(auth, async u => {
   user = u;
   if (repUnsub) { repUnsub(); repUnsub = null; }
+  if (setlistsUnsub) { setlistsUnsub(); setlistsUnsub = null; }
   if (!u) {
     $('gate').style.display = 'block'; $('loading').style.display = 'none'; $('content').style.display = 'none';
     $('userChip').innerHTML = ''; $('signoutBtn').style.display = 'none';
@@ -303,7 +312,15 @@ async function loadBand() {
     repCache.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     renderRepertoire();
     if (!$('libPicker').classList.contains('hidden')) renderLibPicker($('libSearch').value);
-  }, err => toast('Repertoire error: ' + err.message));
+  }, err => toast('Song list error: ' + err.message));
+
+  // Live setlists
+  setlistsUnsub = onSnapshot(query(setlistsCol()), snap3 => {
+    setlistCache = snap3.docs.map(d => ({ id: d.id, ...d.data() }));
+    setlistCache.sort((a, b) =>
+      (b.gigDate || '').localeCompare(a.gigDate || '') || (a.name || '').localeCompare(b.name || ''));
+    renderSetlists();
+  }, err => toast('Setlists error: ' + err.message));
 }
 
 function renderMembers() {
@@ -349,7 +366,7 @@ function renderRepertoire() {
     const keyInput = row.querySelector('.key-input');
     keyInput.addEventListener('change', () => updateDoc(repDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
     row.querySelector('.del').addEventListener('click', () => {
-      if (confirm(`Remove "${s.title}" from ${band.name}'s repertoire?`)) deleteDoc(repDoc(s.id));
+      if (confirm(`Remove "${s.title}" from ${band.name}'s song list?`)) deleteDoc(repDoc(s.id));
     });
     list.appendChild(row);
   });
@@ -391,7 +408,7 @@ function renderLibPicker(term) {
     row.className = 'lib-pick-row' + (already ? ' added' : '');
     row.innerHTML = `
       <div class="lp-main"><div class="lp-title">${esc(s.title)}</div><div class="lp-artist">${esc(s.artist || '—')}</div></div>
-      ${already ? '<span class="member-chip">In repertoire</span>' : '<button class="btn sm">＋ Add</button>'}`;
+      ${already ? '<span class="member-chip">In song list</span>' : '<button class="btn sm">＋ Add</button>'}`;
     const btn = row.querySelector('button');
     if (btn) btn.addEventListener('click', () => addFromLibrary(s, btn));
     list.appendChild(row);
@@ -399,7 +416,7 @@ function renderLibPicker(term) {
 }
 
 async function addFromLibrary(s, btn) {
-  if (repHas(s.title, s.artist)) { toast('Already in repertoire'); return; }
+  if (repHas(s.title, s.artist)) { toast('Already in song list'); return; }
   if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
   try {
     await addDoc(repCol(), {
@@ -408,7 +425,7 @@ async function addFromLibrary(s, btn) {
       sourceSongId: s.id, addedBy: user.uid,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
-    toast('Added to repertoire');
+    toast('Added to song list');
   } catch (e) { toast('Add failed: ' + (e.code || e.message)); if (btn) { btn.disabled = false; btn.textContent = '＋ Add'; } }
 }
 
@@ -427,7 +444,7 @@ async function manualAdd() {
   const title = $('mTitle').value.trim();
   if (!title) { toast('Enter a song title'); $('mTitle').focus(); return; }
   const artist = $('mArtist').value.trim();
-  if (repHas(title, artist)) { toast('Already in repertoire'); return; }
+  if (repHas(title, artist)) { toast('Already in song list'); return; }
   try {
     await addDoc(repCol(), {
       title, artist, key: $('mKey').value.trim(),
@@ -436,7 +453,7 @@ async function manualAdd() {
     });
     $('mTitle').value = ''; $('mArtist').value = ''; $('mKey').value = '';
     $('mTitle').focus();
-    toast('Added to repertoire');
+    toast('Added to song list');
   } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
 }
 
@@ -468,10 +485,67 @@ $('saveSettingsBtn').addEventListener('click', async () => {
   } catch (e) { toast('Save failed: ' + (e.code || e.message)); }
 });
 $('deleteBandBtn').addEventListener('click', async () => {
-  if (!confirm(`Delete "${band.name}"? This removes the band and its repertoire for everyone. This cannot be undone.`)) return;
+  if (!confirm(`Delete "${band.name}"? This removes the band, its song list and setlists for everyone. This cannot be undone.`)) return;
   try { await deleteDoc(bandDoc()); location.href = 'bands.html'; }
   catch (e) { toast('Delete failed: ' + (e.code || e.message)); }
 });
+
+// ── Setlists ──
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+function setlistSongCount(sl) {
+  return (sl.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0);
+}
+function renderSetlists() {
+  $('setlistCount').textContent = setlistCache.length + (setlistCache.length === 1 ? ' setlist' : ' setlists');
+  $('setlistHint').style.display = setlistCache.length ? 'none' : '';
+  const list = $('setlistList');
+  list.innerHTML = '';
+  setlistCache.forEach(sl => {
+    const n = setlistSongCount(sl);
+    const row = document.createElement('div');
+    row.className = 'song-row';
+    row.innerHTML = `
+      <div class="song-main">
+        <div class="song-title">${esc(sl.name || 'Untitled setlist')}</div>
+        <div class="song-artist">${sl.gigDate ? esc(fmtDate(sl.gigDate)) + ' · ' : ''}${n} song${n === 1 ? '' : 's'}</div>
+      </div>
+      <a class="btn sm" href="setlist.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sl.id)}">Open ▸</a>
+      <button class="icon-btn del" title="Delete setlist">✕</button>`;
+    row.querySelector('.del').addEventListener('click', () => {
+      if (confirm(`Delete setlist "${sl.name || 'Untitled'}"?`)) deleteDoc(doc(db, 'bands', bandId, 'setlists', sl.id));
+    });
+    list.appendChild(row);
+  });
+}
+
+$('newSetlistBtn').addEventListener('click', () => {
+  const f = $('setlistForm');
+  f.classList.toggle('hidden');
+  if (!f.classList.contains('hidden')) $('slName').focus();
+});
+$('slName').addEventListener('keydown', e => { if (e.key === 'Enter') createSetlist(); });
+$('slCreateBtn').addEventListener('click', createSetlist);
+
+async function createSetlist() {
+  const name = $('slName').value.trim();
+  if (!name) { toast('Name your setlist'); $('slName').focus(); return; }
+  try {
+    const ref = await addDoc(setlistsCol(), {
+      name,
+      gigDate: $('slDate').value || '',
+      sets: [{ title: 'Set 1', songIds: [] }],
+      createdBy: user.uid,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    $('slName').value = ''; $('slDate').value = '';
+    $('setlistForm').classList.add('hidden');
+    location.href = 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(ref.id);
+  } catch (e) { toast('Could not create setlist: ' + (e.code || e.message)); }
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setlist — The Setlist Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
+    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
+    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
+  }
+  body {
+    background-color: var(--cream);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
+    font-family: 'Libre Baskerville', Georgia, serif; color: var(--ink); min-height: 100vh;
+  }
+  .topbar {
+    background: var(--brown); padding: 12px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .back-link { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--tan); text-decoration: none; }
+  .back-link:hover { color: var(--cream); }
+  .topbar-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1rem; font-weight: 700; flex: 1; text-align: center; }
+  .btn {
+    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
+    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
+    padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: #a04020; }
+  .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
+  .btn.ghost:hover { background: rgba(255,255,255,0.15); }
+  .btn.sm { padding: 5px 10px; font-size: 0.68rem; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 26px 18px 90px; }
+
+  /* Setlist head */
+  .sl-head { text-align: center; margin-bottom: 22px; }
+  .sl-name-input {
+    font-family: 'Special Elite', cursive; color: var(--brown); font-size: clamp(1.5rem,4vw,2.3rem);
+    text-align: center; background: transparent; border: none; border-bottom: 2px dashed transparent;
+    width: 100%; max-width: 620px; outline: none; letter-spacing: 0.02em;
+  }
+  .sl-name-input:focus { border-bottom-color: var(--tan); }
+  .sl-date-row { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--faded); font-family: 'Special Elite', cursive; font-size: 0.75rem; }
+  .sl-date-row input { background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 3px; padding: 4px 8px; font-family: 'Special Elite', cursive; color: var(--ink); }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+
+  /* Picker */
+  .picker { display: none; max-width: 620px; margin: 14px auto 0; border: 1px solid var(--tan); border-radius: 4px; background: var(--parchment); overflow: hidden; }
+  .picker.show { display: block; }
+  .picker-head { padding: 10px 12px; background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .picker-head input[type=text] { flex: 1; min-width: 140px; background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.85rem; color: var(--ink); outline: none; }
+  .picker-head select { background: rgba(255,255,255,0.7); border: 1px solid var(--line); border-radius: 3px; padding: 7px 8px; font-family: 'Special Elite', cursive; font-size: 0.72rem; color: var(--ink); }
+  .picker-label { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
+  .picker-list { max-height: 320px; overflow-y: auto; }
+  .pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid rgba(196,176,138,0.4); }
+  .pick-row:last-child { border-bottom: none; }
+  .pick-main { flex: 1; min-width: 0; }
+  .pick-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.86rem; }
+  .pick-artist { font-size: 0.72rem; color: var(--faded); font-style: italic; }
+
+  /* Sets */
+  .set-block { background: var(--parchment); border: 1px solid var(--tan); border-radius: 4px; margin-bottom: 20px; overflow: hidden; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
+  .set-head { background: var(--brown); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+  .set-title-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(200,169,122,0.3); border-radius: 3px; padding: 6px 9px; font-family: 'Playfair Display', serif; font-weight: 700; color: var(--cream); font-size: 0.98rem; outline: none; }
+  .set-title-input:focus { border-color: var(--tan); background: rgba(255,255,255,0.16); }
+  .set-count { font-family: 'Special Elite', cursive; color: var(--tan); font-size: 0.68rem; opacity: 0.8; white-space: nowrap; }
+  .set-del { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.25); color: var(--tan); border-radius: 3px; width: 28px; height: 28px; cursor: pointer; font-size: 13px; }
+  .set-del:hover { background: rgba(139,58,26,0.5); color: #fff; }
+  .set-songs { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .sl-song { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; }
+  .sl-num { font-family: 'Special Elite', cursive; color: var(--faded); font-size: 0.8rem; width: 22px; text-align: center; flex-shrink: 0; }
+  .sl-song-main { flex: 1; min-width: 0; }
+  .sl-song-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.9rem; }
+  .sl-song-title.missing { color: var(--faded); font-style: italic; font-weight: 400; }
+  .sl-song-artist { font-size: 0.73rem; color: var(--faded); font-style: italic; }
+  .sl-key { font-family: 'Special Elite', cursive; font-size: 0.75rem; color: var(--rust); background: rgba(139,58,26,0.1); border: 1px solid rgba(139,58,26,0.25); border-radius: 3px; padding: 2px 7px; flex-shrink: 0; min-width: 30px; text-align: center; }
+  .sl-move { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+  .sl-move button { width: 22px; height: 15px; line-height: 1; background: rgba(74,46,26,0.08); border: 1px solid var(--line); color: var(--faded); cursor: pointer; font-size: 9px; border-radius: 2px; }
+  .sl-move button:hover { background: var(--tan); color: var(--brown); }
+  .sl-play { width: 26px; height: 26px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-decoration: none; background: rgba(139,58,26,0.12); color: var(--rust); flex-shrink: 0; }
+  .sl-play:hover { background: var(--rust); color: #fff; }
+  .sl-setsel { flex-shrink: 0; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; font-family: 'Special Elite', cursive; font-size: 0.62rem; color: var(--ink); padding: 3px; max-width: 74px; }
+  .sl-rm { width: 26px; height: 26px; border-radius: 3px; border: 1px solid rgba(139,58,26,0.2); background: rgba(139,58,26,0.1); color: var(--rust); cursor: pointer; font-size: 12px; flex-shrink: 0; }
+  .sl-rm:hover { background: var(--rust); color: #fff; }
+  .set-empty { text-align: center; color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; padding: 12px; }
+
+  .add-set-btn { display: block; margin: 0 auto 10px; }
+
+  /* Stage view */
+  .stage { position: fixed; inset: 0; z-index: 500; background: #1a0f06; color: var(--cream); overflow-y: auto; display: none; }
+  .stage.show { display: block; }
+  .stage-bar { position: sticky; top: 0; background: rgba(26,15,6,0.95); padding: 14px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(200,169,122,0.2); }
+  .stage-bar .st-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2rem; flex: 1; }
+  .stage-inner { max-width: 760px; margin: 0 auto; padding: 26px 22px 80px; }
+  .stage-set-title { font-family: 'Special Elite', cursive; color: var(--tan); font-size: 1.1rem; letter-spacing: 0.08em; margin: 26px 0 12px; border-bottom: 1px solid rgba(200,169,122,0.25); padding-bottom: 8px; }
+  .stage-song { display: flex; align-items: baseline; gap: 14px; padding: 9px 4px; border-bottom: 1px solid rgba(200,169,122,0.1); }
+  .stage-song .ss-num { font-family: 'Special Elite', cursive; color: var(--faded); width: 28px; font-size: 1rem; }
+  .stage-song .ss-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.3rem; flex: 1; }
+  .stage-song .ss-artist { color: var(--tan); font-style: italic; font-size: 0.9rem; }
+  .stage-song .ss-key { font-family: 'Special Elite', cursive; color: #f0c080; font-size: 1rem; background: rgba(139,58,26,0.4); padding: 2px 10px; border-radius: 4px; }
+  .stage-song a.ss-play { color: #f0c080; text-decoration: none; font-size: 1.1rem; }
+
+  .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
+  .gate h2 { font-family: 'Special Elite', cursive; color: var(--brown); margin-bottom: 10px; }
+  .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive; font-size: 0.78rem; letter-spacing: 0.06em; padding: 10px 20px; border-radius: 4px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 600; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-link" id="backLink" href="bands.html">← Back to band</a>
+  <div class="topbar-title" id="topTitle">Setlist</div>
+  <button class="btn" id="stageBtn">🎤 Stage View</button>
+</div>
+
+<div id="gate" class="gate" style="display:none">
+  <h2>Please sign in</h2>
+  <p>Open the <a href="index.html">library</a> and sign in with Google to view this setlist.</p>
+</div>
+
+<div class="loading" id="loading">Loading…</div>
+
+<div class="wrap" id="content" style="display:none">
+  <div class="sl-head">
+    <input class="sl-name-input" id="slNameInput" placeholder="Setlist name" maxlength="90">
+    <div class="sl-date-row">
+      <span>Gig date:</span>
+      <input type="date" id="slDateInput">
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="addSongBtn">＋ Add Songs</button>
+      <button class="btn ghost" id="addSetBtn">＋ Add Set</button>
+    </div>
+
+    <!-- Picker -->
+    <div class="picker" id="picker">
+      <div class="picker-head">
+        <input type="text" id="pickSearch" placeholder="Filter the band's song list…" autocomplete="off">
+        <span class="picker-label">→</span>
+        <select id="targetSet"></select>
+      </div>
+      <div class="picker-list" id="pickList"></div>
+    </div>
+  </div>
+
+  <div id="setsContainer"></div>
+</div>
+
+<!-- Stage view -->
+<div class="stage" id="stage">
+  <div class="stage-bar">
+    <div class="st-name" id="stageName"></div>
+    <button class="btn ghost" id="stageClose">✕ Close</button>
+  </div>
+  <div class="stage-inner" id="stageInner"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { auth, db } from './firebase-init.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, getDocs, updateDoc, collection, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const bandId = params.get('band') || '';
+const setlistId = params.get('id') || '';
+
+let user = null;
+let band = null;
+let setlist = null;        // { name, gigDate, sets: [{title, songIds:[]}] }
+let songMap = {};          // repertoireId -> song
+let saveTimer = null;
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1600); }
+function setlistDoc() { return doc(db, 'bands', bandId, 'setlists', setlistId); }
+function ytLink(s) { return s.youtube || 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title} ${s.artist||''}`); }
+
+onAuthStateChanged(auth, async u => {
+  user = u;
+  if (!u) { $('gate').style.display = 'block'; $('loading').style.display = 'none'; $('content').style.display = 'none'; return; }
+  $('gate').style.display = 'none';
+  await load();
+});
+
+async function load() {
+  if (!bandId || !setlistId) { $('loading').textContent = 'Missing setlist reference.'; return; }
+  try {
+    const [bandSnap, slSnap, repSnap] = await Promise.all([
+      getDoc(doc(db, 'bands', bandId)),
+      getDoc(setlistDoc()),
+      getDocs(collection(db, 'bands', bandId, 'repertoire'))
+    ]);
+    if (!bandSnap.exists()) { $('loading').innerHTML = 'Band not found. <a href="bands.html">Back</a>'; return; }
+    if (!slSnap.exists()) { $('loading').innerHTML = 'Setlist not found. <a href="band.html?id=' + encodeURIComponent(bandId) + '">Back to band</a>'; return; }
+    band = bandSnap.data();
+    setlist = slSnap.data();
+    if (!Array.isArray(setlist.sets) || !setlist.sets.length) setlist.sets = [{ title: 'Set 1', songIds: [] }];
+    songMap = {};
+    repSnap.docs.forEach(d => { songMap[d.id] = { id: d.id, ...d.data() }; });
+  } catch (e) {
+    $('loading').textContent = 'Could not load setlist: ' + (e.code || e.message);
+    return;
+  }
+
+  $('backLink').href = 'band.html?id=' + encodeURIComponent(bandId);
+  $('topTitle').textContent = (band.name || 'Band') + ' — Setlist';
+  document.title = (setlist.name || 'Setlist') + ' — The Setlist Book';
+  $('slNameInput').value = setlist.name || '';
+  $('slDateInput').value = setlist.gigDate || '';
+  $('loading').style.display = 'none';
+  $('content').style.display = 'block';
+  render();
+}
+
+// ── Persist ──
+function saveSets() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try { await updateDoc(setlistDoc(), { sets: setlist.sets, updatedAt: serverTimestamp() }); }
+    catch (e) { toast('Save failed: ' + (e.code || e.message)); }
+  }, 350);
+}
+
+$('slNameInput').addEventListener('input', () => {
+  setlist.name = $('slNameInput').value;
+  document.title = (setlist.name || 'Setlist') + ' — The Setlist Book';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => updateDoc(setlistDoc(), { name: setlist.name.trim(), updatedAt: serverTimestamp() }).catch(()=>{}), 500);
+});
+$('slDateInput').addEventListener('change', () => {
+  setlist.gigDate = $('slDateInput').value;
+  updateDoc(setlistDoc(), { gigDate: setlist.gigDate, updatedAt: serverTimestamp() }).catch(e => toast('Save failed'));
+});
+
+// ── Render editor ──
+function render() {
+  renderTargetOptions();
+  const cont = $('setsContainer');
+  cont.innerHTML = '';
+  setlist.sets.forEach((set, si) => cont.appendChild(setBlock(set, si)));
+  if (!$('picker').classList.contains('hidden') && $('picker').classList.contains('show')) renderPicker($('pickSearch').value);
+}
+
+function setBlock(set, si) {
+  const block = document.createElement('div');
+  block.className = 'set-block';
+  const songIds = set.songIds || [];
+  block.innerHTML = `
+    <div class="set-head">
+      <input class="set-title-input" value="${esc(set.title || 'Set ' + (si + 1))}" maxlength="40">
+      <span class="set-count">${songIds.length} song${songIds.length === 1 ? '' : 's'}</span>
+      <button class="set-del" title="Delete set">🗑</button>
+    </div>
+    <div class="set-songs"></div>`;
+  const titleInput = block.querySelector('.set-title-input');
+  titleInput.addEventListener('change', () => { setlist.sets[si].title = titleInput.value.trim() || ('Set ' + (si + 1)); saveSets(); });
+  block.querySelector('.set-del').addEventListener('click', () => {
+    if (setlist.sets.length === 1) { toast('Keep at least one set'); return; }
+    if (confirm(`Delete "${set.title}" and remove its songs from this setlist?`)) {
+      setlist.sets.splice(si, 1); saveSets(); render();
+    }
+  });
+
+  const songsEl = block.querySelector('.set-songs');
+  if (!songIds.length) {
+    songsEl.innerHTML = `<div class="set-empty">Empty — use “＋ Add Songs” to fill this set.</div>`;
+  } else {
+    songIds.forEach((sid, pos) => songsEl.appendChild(songRow(sid, si, pos)));
+  }
+  return block;
+}
+
+function songRow(sid, si, pos) {
+  const s = songMap[sid];
+  const row = document.createElement('div');
+  row.className = 'sl-song';
+  const total = setlist.sets[si].songIds.length;
+  const setOptions = setlist.sets.map((st, i) => `<option value="${i}" ${i === si ? 'selected' : ''}>${esc(st.title || 'Set ' + (i+1))}</option>`).join('');
+  row.innerHTML = `
+    <span class="sl-num">${pos + 1}</span>
+    <div class="sl-move">
+      <button class="mv-up" title="Move up" ${pos === 0 ? 'disabled style="opacity:.3;cursor:default"' : ''}>▲</button>
+      <button class="mv-dn" title="Move down" ${pos === total - 1 ? 'disabled style="opacity:.3;cursor:default"' : ''}>▼</button>
+    </div>
+    <div class="sl-song-main">
+      <div class="sl-song-title ${s ? '' : 'missing'}">${s ? esc(s.title) : 'Removed from song list'}</div>
+      <div class="sl-song-artist">${s ? esc(s.artist || '') : ''}</div>
+    </div>
+    ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
+    ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="Play">▶</a>` : ''}
+    ${setlist.sets.length > 1 ? `<select class="sl-setsel" title="Move to set">${setOptions}</select>` : ''}
+    <button class="sl-rm" title="Remove from setlist">✕</button>`;
+
+  row.querySelector('.mv-up').addEventListener('click', () => { if (pos > 0) { moveWithin(si, pos, pos - 1); } });
+  row.querySelector('.mv-dn').addEventListener('click', () => { if (pos < total - 1) { moveWithin(si, pos, pos + 1); } });
+  row.querySelector('.sl-rm').addEventListener('click', () => { setlist.sets[si].songIds.splice(pos, 1); saveSets(); render(); });
+  const sel = row.querySelector('.sl-setsel');
+  if (sel) sel.addEventListener('change', () => {
+    const target = parseInt(sel.value);
+    if (target === si) return;
+    setlist.sets[si].songIds.splice(pos, 1);
+    setlist.sets[target].songIds.push(sid);
+    saveSets(); render();
+  });
+  return row;
+}
+
+function moveWithin(si, from, to) {
+  const arr = setlist.sets[si].songIds;
+  const [x] = arr.splice(from, 1);
+  arr.splice(to, 0, x);
+  saveSets(); render();
+}
+
+// ── Add set ──
+$('addSetBtn').addEventListener('click', () => {
+  setlist.sets.push({ title: 'Set ' + (setlist.sets.length + 1), songIds: [] });
+  saveSets(); render();
+});
+
+// ── Picker ──
+$('addSongBtn').addEventListener('click', () => {
+  const p = $('picker');
+  p.classList.toggle('show');
+  if (p.classList.contains('show')) { renderTargetOptions(); renderPicker(''); $('pickSearch').focus(); }
+});
+$('pickSearch').addEventListener('input', () => renderPicker($('pickSearch').value));
+
+function renderTargetOptions() {
+  const sel = $('targetSet');
+  const prev = sel.value;
+  sel.innerHTML = setlist.sets.map((st, i) => `<option value="${i}">${esc(st.title || 'Set ' + (i+1))}</option>`).join('');
+  if (prev && prev < setlist.sets.length) sel.value = prev;
+}
+
+function renderPicker(term) {
+  const list = $('pickList');
+  const songs = Object.values(songMap).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const q = (term || '').trim().toLowerCase();
+  const items = songs.filter(s => !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
+  list.innerHTML = '';
+  if (!songs.length) { list.innerHTML = `<div class="set-empty">This band's song list is empty. Add songs on the <a href="band.html?id=${encodeURIComponent(bandId)}">band page</a> first.</div>`; return; }
+  if (!items.length) { list.innerHTML = `<div class="set-empty">No matches.</div>`; return; }
+  items.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'pick-row';
+    row.innerHTML = `
+      <div class="pick-main"><div class="pick-title">${esc(s.title)}</div><div class="pick-artist">${esc(s.artist || '')}${s.key ? ' · ' + esc(s.key) : ''}</div></div>
+      <button class="btn sm">＋ Add</button>`;
+    row.querySelector('button').addEventListener('click', () => {
+      const target = parseInt($('targetSet').value) || 0;
+      setlist.sets[target].songIds.push(s.id);
+      saveSets(); render();
+      toast('Added to ' + (setlist.sets[target].title || 'set'));
+    });
+    list.appendChild(row);
+  });
+}
+
+// ── Stage view ──
+$('stageBtn').addEventListener('click', openStage);
+$('stageClose').addEventListener('click', () => $('stage').classList.remove('show'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('stage').classList.remove('show'); });
+
+function openStage() {
+  $('stageName').textContent = (setlist.name || 'Setlist') + (setlist.gigDate ? ' — ' + fmtDate(setlist.gigDate) : '');
+  const inner = $('stageInner');
+  inner.innerHTML = '';
+  setlist.sets.forEach(set => {
+    const h = document.createElement('div');
+    h.className = 'stage-set-title';
+    h.textContent = set.title || 'Set';
+    inner.appendChild(h);
+    const ids = set.songIds || [];
+    if (!ids.length) {
+      const e = document.createElement('div'); e.className = 'set-empty'; e.style.color = 'var(--tan)'; e.textContent = '(empty)';
+      inner.appendChild(e); return;
+    }
+    ids.forEach((sid, i) => {
+      const s = songMap[sid];
+      const row = document.createElement('div');
+      row.className = 'stage-song';
+      row.innerHTML = `
+        <span class="ss-num">${i + 1}</span>
+        <span class="ss-title">${s ? esc(s.title) : '<span style="opacity:.5">removed</span>'} ${s && s.artist ? `<span class="ss-artist">— ${esc(s.artist)}</span>` : ''}</span>
+        ${s && s.key ? `<span class="ss-key">${esc(s.key)}</span>` : ''}
+        ${s ? `<a class="ss-play" href="${esc(ytLink(s))}" target="_blank">▶</a>` : ''}`;
+      inner.appendChild(row);
+    });
+  });
+  $('stage').classList.add('show');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+</script>
+</body>
+</html>
