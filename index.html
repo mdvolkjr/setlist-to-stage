@@ -52,7 +52,19 @@
   .tile .t-name { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 1.3rem; margin-top: 8px; }
   .tile .t-sub { font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--faded); margin-top: 4px; }
 
-  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
+  /* Quick guide */
+  .guide { background: var(--parchment); border: 1px solid var(--tan); border-radius: 10px; margin-bottom: 30px; overflow: hidden; }
+  .guide summary { cursor: pointer; padding: 13px 18px; font-family: var(--font-label); font-size: 0.8rem; letter-spacing: 0.06em; color: var(--brown); list-style: none; }
+  .guide summary::-webkit-details-marker { display: none; }
+  .guide summary::after { content: '▸'; float: right; color: var(--faded); transition: transform 0.15s; }
+  .guide[open] summary::after { transform: rotate(90deg); }
+  .guide summary:hover { background: rgba(74,46,26,0.05); }
+  .guide-steps { margin: 0; padding: 4px 20px 16px 38px; }
+  .guide-steps li { font-size: 0.88rem; line-height: 1.55; margin-bottom: 10px; color: var(--ink); }
+  .guide-steps a { color: var(--rust); }
+  .guide-steps b { color: var(--brown); }
+
+  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); scroll-margin-top: 70px; }
   .section-head h2 { font-family: var(--font-label); color: var(--brown); font-size: 1.05rem; letter-spacing: 0.06em; }
   .section-head .count { font-family: var(--font-label); color: var(--faded); font-size: 0.75rem; opacity: 0.75; }
 
@@ -113,19 +125,32 @@
   </div>
 
   <div class="tiles">
-    <a class="tile" href="library.html"><div class="t-icon">📚</div><div class="t-name">My Songs</div><div class="t-sub" id="songSub">Your library</div></a>
-    <a class="tile" href="bands.html"><div class="t-icon">🎸</div><div class="t-name">My Bands</div><div class="t-sub" id="bandSub">Your projects</div></a>
-    <a class="tile" href="profile.html"><div class="t-icon">👤</div><div class="t-name">My Profile</div><div class="t-sub" id="profileSub">You &amp; your instruments</div></a>
+    <a class="tile" href="library.html"><div class="t-icon">📚</div><div class="t-name">My Library</div><div class="t-sub" id="songSub">Your songs</div></a>
+    <a class="tile" href="bands.html"><div class="t-icon">🎸</div><div class="t-name">Bands</div><div class="t-sub" id="bandSub">Your projects</div></a>
+    <a class="tile" href="#gigsSection"><div class="t-icon">🎤</div><div class="t-name">Gigs</div><div class="t-sub" id="gigSub">Coming up</div></a>
+    <a class="tile" href="#setlistsSection"><div class="t-icon">🎵</div><div class="t-name">Set Lists</div><div class="t-sub" id="slSub">All of them</div></a>
   </div>
 
-  <div class="section-head">
+  <!-- Quick guide -->
+  <details class="guide" id="guide">
+    <summary>📖 How this works — the 2-minute tour</summary>
+    <ol class="guide-steps">
+      <li><b>📚 Add your songs to the Library.</b> On the <a href="library.html">Library</a> page, type a title in the box at the top — it suggests real songs — or hit <b>⇪ Bulk</b> and paste a whole list at once. Every song gets its own page for notes, keys, tabs, and versions.</li>
+      <li><b>🎸 Make a band and pull your mates in.</b> On <a href="bands.html">Bands</a>, create the band, then send the <b>invite link</b> from band Settings — they click it and they're in. Everyone shares the band's Song List.</li>
+      <li><b>Build the band's Song List.</b> On the band page, add songs from your Library (or type new ones). This is the pool your setlists draw from.</li>
+      <li><b>🎵 Make a Set List.</b> On the band page → Setlists → create one. Give it a <b>gig date</b> and it shows up under Gigs below with a countdown. No date? It lives in Set Lists as a standing list.</li>
+      <li><b>🎯 Practice &amp; play.</b> Any setlist has Practice mode (one song at a time with the video), Stage View (huge text for the gig), Print, and ▶ Export to play everything on YouTube. Want to woodshed on your own? Make a <b>My Practice List</b> in the Library — it's yours alone, no band needed.</li>
+    </ol>
+  </details>
+
+  <div class="section-head" id="gigsSection">
     <h2>🎤 Upcoming Gigs</h2>
     <span class="count" id="gigCount"></span>
   </div>
   <div class="gig-list" id="gigList"></div>
 
-  <div class="section-head" style="margin-top:32px">
-    <h2>🎵 Practice &amp; Standing Setlists</h2>
+  <div class="section-head" style="margin-top:32px" id="setlistsSection">
+    <h2>🎵 Set Lists</h2>
     <span class="count" id="standingCount"></span>
   </div>
   <div class="gig-list" id="standingList"></div>
@@ -202,8 +227,8 @@ async function loadDashboard(user) {
         gigDate: sl.gigDate || '',
         count: (sl.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0)
       };
-      if (sl.gigDate && sl.gigDate >= today) gigs.push(item);
-      else if (!sl.gigDate) standing.push(item);
+      if (item.gigDate && item.gigDate >= today) gigs.push(item);
+      standing.push(item);   // the Set Lists section shows EVERY setlist — dated, past, or standing
     };
     await Promise.all([
       ...bands.map(async b => {
@@ -223,9 +248,18 @@ async function loadDashboard(user) {
       })()
     ]);
     gigs.sort((a, b) => a.gigDate.localeCompare(b.gigDate));
-    standing.sort((a, b) => (a.bandName + a.name).localeCompare(b.bandName + b.name));
+    // Set Lists order: upcoming gigs first (soonest), then standing (no date), then past gigs (most recent first)
+    const rank = it => (it.gigDate && it.gigDate >= today) ? 0 : (!it.gigDate ? 1 : 2);
+    standing.sort((a, b) => rank(a) - rank(b)
+      || (rank(a) === 0 ? a.gigDate.localeCompare(b.gigDate) : 0)
+      || (rank(a) === 2 ? b.gigDate.localeCompare(a.gigDate) : 0)
+      || (a.bandName + a.name).localeCompare(b.bandName + b.name));
+    $('gigSub').textContent = gigs.length ? `${gigs.length} coming up` : 'None on the books';
+    $('slSub').textContent = standing.length ? `${standing.length} list${standing.length === 1 ? '' : 's'}` : 'Make your first';
     renderGigs(gigs);
-    renderStanding(standing);
+    renderStanding(standing, today);
+    // First visit with an empty library? Open the tour.
+    if (!total) $('guide').open = true;
   } catch (e) {
     $('gigList').innerHTML = `<div class="empty-state"><p>Couldn't load dashboard: ${esc(e.code || e.message)}</p></div>`;
   }
@@ -261,23 +295,30 @@ function renderGigs(gigs) {
   });
 }
 
-function renderStanding(items) {
+function renderStanding(items, today) {
   $('standingCount').textContent = items.length ? `${items.length}` : '';
   const list = $('standingList');
   list.innerHTML = '';
   if (!items.length) {
-    list.innerHTML = `<div class="empty-state"><div class="big">🎵</div><p>No standing setlists. Make a setlist <em>without</em> a gig date for the sets you play all the time —<br>name it something clear like “Standard 3-Hour” or “Acoustic Set” and it'll live here.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="big">🎵</div><p>No setlists yet. Open a band and create one — or make a personal<br>🎯 Practice List from your <a href="library.html">Library</a>. They'll all live here.</p></div>`;
     return;
   }
   items.forEach(s => {
+    const upcoming = s.gigDate && s.gigDate >= today;
+    const past = s.gigDate && s.gigDate < today;
     const a = document.createElement('a');
     a.className = 'gig-card';
     a.href = s.href;
+    const when = upcoming
+      ? `<div class="gw-days">${daysUntil(s.gigDate) || '🎶'}</div><div class="gw-lbl">${daysUntil(s.gigDate) === 0 ? 'tonight' : daysUntil(s.gigDate) === 1 ? 'day' : 'days'}</div>`
+      : past
+        ? `<div class="gw-days" style="font-size:1.3rem">✓</div><div class="gw-lbl">played</div>`
+        : `<div class="gw-days" style="font-size:1.3rem">🎵</div><div class="gw-lbl">standing</div>`;
     a.innerHTML = `
-      <div class="gig-when"><div class="gw-days" style="font-size:1.3rem">🎵</div><div class="gw-lbl">no date</div></div>
+      <div class="gig-when">${when}</div>
       <div class="gig-main">
         <div class="gig-name">${esc(s.name)}</div>
-        <div class="gig-meta">${esc(s.bandName)} · ${s.count} song${s.count === 1 ? '' : 's'}</div>
+        <div class="gig-meta">${esc(s.bandName)} · ${s.count} song${s.count === 1 ? '' : 's'}${s.gigDate ? ' · ' + esc(fmtDate(s.gigDate)) : ''}</div>
       </div>`;
     list.appendChild(a);
   });

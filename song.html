@@ -34,6 +34,7 @@
   .hero-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .meta-chip { font-family: var(--font-label); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
   .chip-known { background: rgba(58,107,58,0.35); color: #90d890; border: 1px solid rgba(58,107,58,0.5); }
+  .chip-priv { background: rgba(255,255,255,0.1); color: var(--tan); border: 1px solid rgba(200,169,122,0.4); }
   .chip-key { background: rgba(139,58,26,0.35); color: var(--tan); border: 1px solid rgba(139,58,26,0.5); }
   .chip-set { background: rgba(200,169,122,0.15); color: var(--tan); border: 1px solid rgba(200,169,122,0.3); }
 
@@ -552,7 +553,7 @@ function populate() {
   $('heroArtist').textContent = song.artist || '';
 
   const meta = $('heroMeta');
-  meta.innerHTML = '';
+  meta.innerHTML = `<span class="meta-chip chip-priv" title="This is your personal copy — notes, tabs and recordings here are yours alone. Band versions live on each band's 📖 page.">🔒 Your private copy</span>`;
   if (song.status === 'learned') meta.innerHTML += `<span class="meta-chip chip-known">✓ Know It Well</span>`;
   if (song.key) meta.innerHTML += `<span class="meta-chip chip-key">Key: ${(song.key||'').replace(/</g,'&lt;')}</span>`;
 
