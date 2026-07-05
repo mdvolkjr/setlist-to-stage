@@ -23,7 +23,22 @@ This is the first thing to read. It reflects the app as it actually is, not the 
 - **Setlists** (`setlist.html`) — per-band, gig-dated or practice; multi-set running order built from the Song List; reorder, move between sets, per-song key + play link; **Stage View** (large read-only running order).
 - **Infra** — Firestore rules (per-user + per-band-membership), Storage rules, GitHub Actions auto-deploy to Firebase Hosting on push to `main`.
 
-## 🆕 Added this session (done, needs your live sign-in test)
+## 🆕 Added 2026-07-05 PM (crash-recovery session — done, needs your live sign-in test)
+
+- **Personal practice setlists** — Library page → "🎯 My Practice Lists": setlists that belong to
+  you alone (stored at `users/{uid}/setlists`), built from your Library, with the full editor
+  (sets, reorder, practice runner, print, export) via `setlist.html?mine=1&id=`. They show on the
+  dashboard too (labeled 🎯 Personal; give one a date and it joins Upcoming Gigs).
+- **Band-song page private zone** — your own private reference links (same layout as the shared
+  list, each with "Share → band"), plus inline tab-link chips and MP3 playback from your Library
+  copy — the essentials without clicking through to song.html.
+- **Additional Performances (song page)** — paste a link and it saves instantly; rows show an
+  editable name with just the site name under it (no more raw URLs); ▶ opens, ✕ removes.
+- **Smart back links** — song.html and band-song.html "← Back" return to the page you actually
+  came from (setlist → 📖 → private page → back walks all the way home), with the static target
+  as fallback for direct visits.
+
+## 🆕 Added earlier (done, needs your live sign-in test)
 
 - **Printable stage setlist** (`setlist.html`) — Stage View now has **font-size presets (A / A+ / A++)** and a **🖨 Print** button with a print-optimized black-on-white layout that page-breaks cleanly between sets.
 - **Playlist export** (`setlist.html`, "▶ Export") — **YouTube auto-playlist** (plays the setlist in order, no login), **M3U** download for uploaded MP3s, **copy ordered list** for Spotify/Apple. Pure logic in `lib/playlist.js`, unit-tested in `tests/playlist.test.js` (6 tests passing).

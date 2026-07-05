@@ -88,18 +88,20 @@
   .mp3-del:hover { background: var(--rust); color: white; }
 
   .perf-list { display: flex; flex-direction: column; gap: 8px; }
-  .perf-item { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; }
-  .perf-item input { flex: 1; background: transparent; border: none; outline: none; font-family: var(--font-body); font-size: 0.82rem; color: var(--ink); }
-  .perf-item input::placeholder { color: var(--tan); font-style: italic; }
-  .perf-item-url { font-size: 0.72rem; color: var(--faded); }
-  .perf-open { flex-shrink: 0; width: 26px; height: 26px; background: var(--rust); border: none; border-radius: 7px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s; }
-  .perf-open:hover { background: var(--brown); }
+  .perf-item { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.55); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
+  .perf-main { flex: 1; min-width: 0; }
+  .perf-main input { width: 100%; background: transparent; border: none; outline: none; font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; color: var(--ink); padding: 0; }
+  .perf-main input::placeholder { color: var(--tan); font-style: italic; font-weight: 400; }
+  .perf-item-url { font-size: 0.72rem; color: var(--faded); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .perf-open { flex-shrink: 0; width: 28px; height: 28px; background: rgba(179,74,38,0.1); border: none; border-radius: 8px; color: var(--rust); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 12px; transition: background 0.15s; }
+  .perf-open:hover { background: var(--rust); color: #fff; }
   .perf-open.disabled { background: var(--line); pointer-events: none; }
-  .perf-open svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .perf-delete { flex-shrink: 0; width: 26px; height: 26px; background: rgba(139,58,26,0.15); border: 1px solid rgba(139,58,26,0.2); border-radius: 7px; color: var(--rust); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; transition: background 0.15s; }
-  .perf-delete:hover { background: var(--rust); color: white; }
-  .add-perf-btn { font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.1em; background: rgba(74,46,26,0.08); color: var(--brown); border: 1px dashed var(--tan); border-radius: 7px; padding: 8px 16px; cursor: pointer; width: 100%; text-transform: uppercase; transition: background 0.15s; margin-top: 8px; }
-  .add-perf-btn:hover { background: rgba(74,46,26,0.15); }
+  .perf-delete { flex-shrink: 0; width: 28px; height: 28px; background: #fff; border: 1px solid var(--line); border-radius: 8px; color: var(--faded); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; transition: background 0.15s; }
+  .perf-delete:hover { background: var(--rust); border-color: var(--rust); color: white; }
+  .perf-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .perf-add .url { flex: 2 1 220px; }
+  .perf-add .label { flex: 2 1 180px; }
+  .perf-hint { font-size: 0.74rem; color: var(--faded); font-style: italic; margin-top: 8px; }
 
   #saveFlash { position: fixed; bottom: 20px; right: 20px; background: var(--brown); color: var(--cream); font-family: var(--font-label); font-size: 0.8rem; letter-spacing: 0.1em; padding: 10px 20px; border-radius: 9px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; pointer-events: none; text-transform: uppercase; }
   #saveFlash.show { opacity: 1; }
@@ -110,7 +112,7 @@
 <body>
 
 <div class="topbar">
-  <a href="library.html" class="back-btn">← Back to Library</a>
+  <a href="library.html" class="back-btn" id="backBtn">← Back to Library</a>
   <div class="topbar-title" id="topbarTitle">Song Detail</div>
   <button class="save-top-btn" id="saveBtn">💾 Save</button>
 </div>
@@ -177,7 +179,12 @@
         <div class="panel-header"><span class="icon">🎬</span> Additional Performances / Versions</div>
         <div class="panel-body">
           <div class="perf-list" id="perfList"></div>
-          <button class="add-perf-btn" onclick="addPerf()">+ Add Another Performance or Version</button>
+          <div class="perf-add">
+            <input type="url" class="text-input url" id="perfUrlInput" placeholder="Paste a YouTube (or any) link — saves instantly">
+            <input type="text" class="text-input label" id="perfLabelInput" placeholder="Label (optional) — e.g. Live at Austin, 2004">
+            <button class="btn" id="perfAddBtn">＋ Add</button>
+          </div>
+          <div class="perf-hint">Paste a link and it saves itself. Click a version's name to rename it — the messy URL stays tucked behind ▶.</div>
         </div>
       </div>
     </div>
@@ -394,41 +401,68 @@ function updateTabHelpers() {
 $('ssInput').addEventListener('input', () => { $('ssTabInput').value = $('ssInput').value; updateTabHelpers(); });
 $('ugQuick').addEventListener('input', () => { $('ugInput').value = $('ugQuick').value; updateTabHelpers(); });
 
+// ── Smart back — return to wherever you actually came from ──
+// Coming from a setlist or a band song page, ← goes back there; the
+// static "Back to Library" href stays as the fallback for direct visits.
+(() => {
+  const back = $('backBtn');
+  let ref = '';
+  try { if (document.referrer && new URL(document.referrer).origin === location.origin) ref = document.referrer; } catch {}
+  if (!ref || ref === location.href || history.length <= 1) return;
+  const page = (ref.split('/').pop() || 'index.html').split('?')[0];
+  const names = { 'setlist.html': 'setlist', 'band-song.html': 'band song page', 'band.html': 'band', 'index.html': 'dashboard', 'library.html': 'Library' };
+  back.textContent = '← Back to ' + (names[page] || 'previous page');
+  back.addEventListener('click', e => { e.preventDefault(); history.back(); });
+})();
+
 // ── Extra performances ──
-window.addPerf = function (label = '', url = '') {
-  perfs.push({ label, url });
-  renderPerfs();
-};
+const escAttr = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function urlHost(u) { try { return new URL(/^https?:/i.test(u) ? u : 'https://' + u).hostname.replace(/^www\./,''); } catch { return ''; } }
+function normUrl(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+}
+let perfLabelTimer = null;
 function renderPerfs() {
   const list = $('perfList');
   list.innerHTML = '';
+  if (!perfs.length) { list.innerHTML = '<div class="perf-item-url" style="padding:2px">No extra versions yet — paste a link below.</div>'; return; }
   perfs.forEach((p, idx) => {
     const div = document.createElement('div');
     div.className = 'perf-item';
     div.innerHTML = `
-      <input type="text" placeholder="Label (e.g. Live at Austin, 2004)" value="${(p.label||'').replace(/"/g,'&quot;')}" data-pidx="${idx}" data-field="label">
-      <input type="url" placeholder="YouTube or other URL" value="${(p.url||'').replace(/"/g,'&quot;')}" data-pidx="${idx}" data-field="url" class="perf-item-url" style="min-width:0;flex:1.5">
-      <a class="perf-open ${p.url ? '' : 'disabled'}" ${p.url ? `href="${(p.url||'').replace(/"/g,'&quot;')}" target="_blank"` : ''}><svg viewBox="0 0 10 10"><path d="M1 5h8M5.5 1.5 9 5l-3.5 3.5"/></svg></a>
-      <button class="perf-delete" data-del="${idx}" title="Remove">✕</button>`;
-    list.appendChild(div);
-    div.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', () => {
-        const i = parseInt(inp.dataset.pidx);
-        perfs[i][inp.dataset.field] = inp.value;
-        const openBtn = inp.parentElement.querySelector('.perf-open');
-        if (openBtn) {
-          const u = perfs[i].url;
-          if (u) { openBtn.classList.remove('disabled'); openBtn.href = u; openBtn.target = '_blank'; }
-          else { openBtn.classList.add('disabled'); openBtn.removeAttribute('href'); }
-        }
-      });
-      inp.addEventListener('change', saveAll);
+      <div class="perf-main">
+        <input type="text" placeholder="Name this version… (e.g. Live at Austin, 2004)" value="${escAttr(p.label)}">
+        <div class="perf-item-url">${escAttr(urlHost(p.url) || 'no link')}</div>
+      </div>
+      <a class="perf-open ${p.url ? '' : 'disabled'}" ${p.url ? `href="${escAttr(p.url)}" target="_blank" title="Play"` : ''}>▶</a>
+      <button class="perf-delete" title="Remove">✕</button>`;
+    const inp = div.querySelector('input');
+    inp.addEventListener('input', () => {
+      perfs[idx].label = inp.value;
+      clearTimeout(perfLabelTimer);
+      perfLabelTimer = setTimeout(saveAll, 900);
     });
-    div.querySelector('[data-del]').addEventListener('click', () => {
+    inp.addEventListener('change', saveAll);
+    div.querySelector('.perf-delete').addEventListener('click', () => {
       perfs.splice(idx, 1); renderPerfs(); saveAll();
     });
+    list.appendChild(div);
   });
 }
+async function addPerfNow() {
+  const url = normUrl($('perfUrlInput').value);
+  if (!url) return;
+  perfs.push({ label: $('perfLabelInput').value.trim(), url });
+  $('perfUrlInput').value = ''; $('perfLabelInput').value = '';
+  renderPerfs();
+  await saveAll();
+}
+$('perfAddBtn').addEventListener('click', addPerfNow);
+$('perfUrlInput').addEventListener('paste', () => setTimeout(addPerfNow, 60));
+[$('perfUrlInput'), $('perfLabelInput')].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') addPerfNow(); }));
 
 // ── MP3 upload / playback ──
 $('mp3File')?.addEventListener('change', async e => {

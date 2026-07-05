@@ -92,6 +92,18 @@
 
 
   /* Library status tabs + controls */
+  /* Personal practice lists strip */
+  .plists { background: var(--parchment); border: 1px solid var(--tan); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; }
+  .plists-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .plists-title { font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown); flex: 1; }
+  .plists-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .plist-chip { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 6px 6px 13px; text-decoration: none; color: var(--brown); font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; }
+  .plist-chip:hover { border-color: var(--rust); box-shadow: 1px 2px 8px rgba(74,46,26,0.12); }
+  .plist-chip .pc-count { font-family: var(--font-label); font-size: 0.62rem; color: var(--faded); white-space: nowrap; }
+  .plist-chip .pc-del { width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(74,46,26,0.07); color: var(--faded); cursor: pointer; font-size: 10px; flex-shrink: 0; }
+  .plist-chip .pc-del:hover { background: var(--rust); color: #fff; }
+  .plists-empty { font-size: 0.78rem; color: var(--faded); font-style: italic; }
+
   .lib-tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; position: sticky; top: 52px; z-index: 20; background: var(--cream); padding: 8px 0; }
   .lib-tab { font-family: var(--font-label); font-size: 0.76rem; letter-spacing: 0.04em; color: var(--faded); background: var(--parchment); border: 1px solid var(--tan); border-radius: 16px; padding: 8px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background 0.15s, color 0.15s; }
   .lib-tab:hover { color: var(--brown); }
@@ -305,6 +317,15 @@
     <div class="suggest-box" id="suggestBox"></div>
   </div>
 
+  <!-- Personal practice setlists (yours alone — no band) -->
+  <div class="plists">
+    <div class="plists-head">
+      <span class="plists-title">🎯 My Practice Lists</span>
+      <button class="btn sm" id="newPlistBtn">＋ New list</button>
+    </div>
+    <div class="plists-row" id="plistRow"></div>
+  </div>
+
   <!-- Status tabs -->
   <div class="lib-tabs">
     <button class="lib-tab active" data-status="all">All Songs <span class="lt-count" id="cntAll"></span></button>
@@ -464,6 +485,8 @@ onAuthStateChanged(auth, user => {
   loading.style.display = 'block';
   appWrap.style.display = 'none';
 
+  loadPlists();
+
   // Live library subscription
   songsUnsub = onSnapshot(query(songsCol(), orderBy('title')), snap => {
     songsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -473,6 +496,51 @@ onAuthStateChanged(auth, user => {
   }, err => {
     loading.textContent = 'Could not load your library: ' + err.message;
   });
+});
+
+// ── Personal practice lists (users/{uid}/setlists — no band involved) ──
+const plistsCol = () => collection(db, 'users', currentUser.uid, 'setlists');
+async function loadPlists() {
+  try {
+    const snap = await getDocs(plistsCol());
+    renderPlists(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  } catch { renderPlists([]); }
+}
+function renderPlists(lists) {
+  const row = document.getElementById('plistRow');
+  row.innerHTML = '';
+  if (!lists.length) {
+    row.innerHTML = '<span class="plists-empty">Learn songs in chunks — e.g. “10 to nail this month” or “Everything I know”. Yours alone, no band attached.</span>';
+    return;
+  }
+  lists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  lists.forEach(l => {
+    const count = (l.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0);
+    const chip = document.createElement('a');
+    chip.className = 'plist-chip';
+    chip.href = 'setlist.html?mine=1&id=' + encodeURIComponent(l.id);
+    chip.innerHTML = `${esc(l.name || 'Practice list')} <span class="pc-count">${count} song${count === 1 ? '' : 's'}</span><button class="pc-del" title="Delete this list">✕</button>`;
+    chip.querySelector('.pc-del').addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!confirm(`Delete "${l.name || 'this list'}"? The songs stay in your Library.`)) return;
+      try { await deleteDoc(doc(db, 'users', currentUser.uid, 'setlists', l.id)); loadPlists(); }
+      catch (err) { toast('Delete failed: ' + (err.code || err.message)); }
+    });
+    row.appendChild(chip);
+  });
+}
+document.getElementById('newPlistBtn').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const name = prompt('Name your practice list:', 'My next 10');
+  if (name === null) return;
+  try {
+    const ref = await addDoc(plistsCol(), {
+      name: name.trim() || 'Practice list', gigDate: '',
+      sets: [{ title: 'Songs', songIds: [] }],
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    location.href = 'setlist.html?mine=1&id=' + encodeURIComponent(ref.id);
+  } catch (e) { toast('Create failed: ' + (e.code || e.message)); }
 });
 
 // ── Render ──

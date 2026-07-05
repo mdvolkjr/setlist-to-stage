@@ -61,8 +61,13 @@
   @media (max-width: 560px) { .hero-field input.yt { width: 100%; } .hero-field { flex-wrap: wrap; } }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
-  .perf-share { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; margin-bottom: 6px; }
-  .perf-share .p-label { flex: 1; min-width: 0; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pv-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pv-chip { font-family: var(--font-label); font-size: 0.72rem; color: var(--brown); text-decoration: none; background: rgba(74,46,26,0.07); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+  .pv-chip:hover { background: var(--brown); color: #fff; }
+  .pv-mp3 audio { width: 100%; margin-top: 4px; }
+  .ref-row .pv-share { flex-shrink: 0; background: rgba(62,125,79,0.08); border: 1px solid rgba(62,125,79,0.3); color: var(--green); border-radius: 8px; padding: 5px 10px; font-family: var(--font-label); font-size: 0.68rem; cursor: pointer; white-space: nowrap; }
+  .ref-row .pv-share:hover { background: var(--green); color: #fff; }
+  @media (max-width: 560px) { .ref-row { flex-wrap: wrap; } .ref-row .ref-main { flex: 1 1 100%; } }
 </style>
 </head>
 <body>
@@ -144,12 +149,19 @@
           </div>
           <label class="field-label">General notes <span class="save-note" id="pvSaved">Saved ✓</span></label>
           <textarea class="text-input" id="pvNotes"></textarea>
+          <div id="pvExtras" style="margin-top:14px; display:none"></div>
           <div style="margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <a class="btn ghost sm" id="fullPrivateLink">📖 Open your full private page (MP3, tabs, more)</a>
+            <a class="btn ghost sm" id="fullPrivateLink">📖 Open your full private page (MP3 upload, tabs, more)</a>
           </div>
-          <div id="perfShareWrap" style="margin-top:16px; display:none">
-            <label class="field-label">Your saved performances — share one with the band</label>
-            <div id="perfShareList"></div>
+          <div style="margin-top:18px">
+            <label class="field-label">Your reference links &amp; versions — only you see these</label>
+            <div class="ref-list" id="pvRefList"></div>
+            <div class="ref-add">
+              <input class="text-input url" id="pvRefUrl" placeholder="Paste a YouTube (or any) URL — saves instantly">
+              <input class="text-input note" id="pvRefNote" placeholder="Label — e.g. “Isolated bass track”">
+              <button class="btn" id="pvRefAddBtn">＋ Add</button>
+            </div>
+            <div class="ref-hint">Private — these live on your Library copy of this song. Use “Share → band” to move one into the shared list above.</div>
           </div>
         </div>
       </div>
@@ -205,6 +217,18 @@ async function load() {
   document.title = (rep.title || 'Song') + ' — ' + (band.name || 'Band');
   $('backBand').href = 'band.html?id=' + encodeURIComponent(bandId);
   $('backBand').textContent = '← ' + (band.name || 'Back to band');
+  // Smart back: came here from a setlist (or elsewhere in the app)? ← returns there.
+  try {
+    const ref = document.referrer && new URL(document.referrer).origin === location.origin ? document.referrer : '';
+    if (ref && ref !== location.href && history.length > 1) {
+      const page = (ref.split('/').pop() || 'index.html').split('?')[0];
+      const names = { 'setlist.html': 'setlist', 'band.html': band.name || 'band', 'index.html': 'dashboard', 'library.html': 'Library', 'song.html': 'your song page' };
+      if (names[page]) {
+        $('backBand').textContent = '← Back to ' + names[page];
+        $('backBand').addEventListener('click', e => { e.preventDefault(); history.back(); });
+      }
+    }
+  } catch {}
   $('bandNameHdr').textContent = band.name || 'this band';
   $('hsTitle').textContent = rep.title || 'Untitled';
   $('hsArtist').textContent = rep.artist || '';
@@ -346,18 +370,59 @@ function renderPrivate() {
   $('pvTricky').value = libSong.tricky || '';
   $('pvNotes').value = libSong.notes || '';
   $('fullPrivateLink').href = 'song.html?id=' + encodeURIComponent(libSong.id);
-  const perfs = Array.isArray(libSong.perfs) ? libSong.perfs.filter(p => p && p.url) : [];
-  $('perfShareWrap').style.display = perfs.length ? '' : 'none';
-  const list = $('perfShareList');
+  // Inline private extras — tabs & your recording, no click-through needed
+  const fixUrl = u => /^https?:/i.test(u) ? u : 'https://' + u;
+  const tabs = [['Songsterr', libSong.songsterr], ['Ultimate Guitar', libSong.ug], ['Tab', libSong.tab1], ['Tab 2', libSong.tab2]].filter(t => t[1]);
+  let exHtml = '';
+  if (tabs.length) exHtml += `<div class="pv-chips">${tabs.map(t => `<a class="pv-chip" href="${esc(fixUrl(t[1]))}" target="_blank">🎼 ${esc(t[0])} ↗</a>`).join('')}</div>`;
+  if (libSong.mp3Url) exHtml += `<div class="pv-mp3"><span class="ref-meta">🎙 ${esc(libSong.mp3Name || 'Your recording')}</span><audio controls src="${esc(libSong.mp3Url)}"></audio></div>`;
+  $('pvExtras').innerHTML = exHtml;
+  $('pvExtras').style.display = exHtml ? '' : 'none';
+  renderPvRefs();
+}
+const urlHost = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+const libSongDoc = () => doc(db, 'users', user.uid, 'songs', libSong.id);
+function renderPvRefs() {
+  const list = $('pvRefList');
+  const perfs = libSong && Array.isArray(libSong.perfs) ? libSong.perfs.filter(p => p && p.url) : [];
   list.innerHTML = '';
+  if (!perfs.length) { list.innerHTML = '<div class="ref-meta" style="padding:4px 2px">Nothing yet — paste a link below. Only you will see it.</div>'; return; }
   perfs.forEach(p => {
     const row = document.createElement('div');
-    row.className = 'perf-share';
-    row.innerHTML = `<span class="p-label">${esc(p.label || p.url)}</span><button class="btn sm ghost">Share with band →</button>`;
-    row.querySelector('button').addEventListener('click', () => addRef(p.url, p.label || 'Shared performance'));
+    row.className = 'ref-row';
+    row.innerHTML = `
+      <div class="ref-main">
+        <div class="ref-note">${esc(p.label || 'Reference')}</div>
+        <div class="ref-meta">${esc(urlHost(p.url) || 'link')} · only you</div>
+      </div>
+      <a class="ref-open" href="${esc(p.url)}" target="_blank" title="Open">▶</a>
+      <button class="pv-share" title="Copy into the band-shared list">Share → band</button>
+      <button class="ref-del" title="Remove">✕</button>`;
+    row.querySelector('.pv-share').addEventListener('click', () => addRef(p.url, p.label || 'Shared performance'));
+    row.querySelector('.ref-del').addEventListener('click', async () => {
+      if (!confirm(`Remove "${p.label || p.url}" from your private links?`)) return;
+      libSong.perfs = (libSong.perfs || []).filter(x => x !== p);
+      try { await updateDoc(libSongDoc(), { perfs: libSong.perfs, updatedAt: serverTimestamp() }); renderPvRefs(); }
+      catch (e) { toast('Remove failed: ' + (e.code || e.message)); }
+    });
     list.appendChild(row);
   });
 }
+async function addPvRef() {
+  if (!libSong) return;
+  const url = normYt($('pvRefUrl').value);
+  const label = $('pvRefNote').value.trim();
+  if (!url) { toast('Paste a URL first'); $('pvRefUrl').focus(); return; }
+  libSong.perfs = [...(Array.isArray(libSong.perfs) ? libSong.perfs : []), { label, url }];
+  try {
+    await updateDoc(libSongDoc(), { perfs: libSong.perfs, updatedAt: serverTimestamp() });
+    $('pvRefUrl').value = ''; $('pvRefNote').value = '';
+    renderPvRefs(); toast('Saved — only you see this');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
+}
+$('pvRefAddBtn').addEventListener('click', addPvRef);
+$('pvRefUrl').addEventListener('paste', () => setTimeout(addPvRef, 60));
+$('pvRefNote').addEventListener('keydown', e => { if (e.key === 'Enter') addPvRef(); });
 ['pvStructure', 'pvTricky', 'pvNotes'].forEach(id => $(id).addEventListener('input', () => {
   clearTimeout(pvTimer);
   pvTimer = setTimeout(async () => {

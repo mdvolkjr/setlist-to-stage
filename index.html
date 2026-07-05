@@ -196,21 +196,32 @@ async function loadDashboard(user) {
     const today = todayStr();
     const gigs = [];
     const standing = [];
-    await Promise.all(bands.map(async b => {
-      try {
-        const slSnap = await getDocs(collection(db, 'bands', b.id, 'setlists'));
-        slSnap.forEach(d => {
-          const sl = d.data();
-          const item = {
-            bandId: b.id, bandName: b.name || 'Band', id: d.id, name: sl.name || 'Setlist',
-            gigDate: sl.gigDate || '',
-            count: (sl.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0)
-          };
-          if (sl.gigDate && sl.gigDate >= today) gigs.push(item);
-          else if (!sl.gigDate) standing.push(item);
-        });
-      } catch {}
-    }));
+    const collect = (sl, id, bandName, href) => {
+      const item = {
+        href, bandName, id, name: sl.name || 'Setlist',
+        gigDate: sl.gigDate || '',
+        count: (sl.sets || []).reduce((n, s) => n + ((s.songIds || []).length), 0)
+      };
+      if (sl.gigDate && sl.gigDate >= today) gigs.push(item);
+      else if (!sl.gigDate) standing.push(item);
+    };
+    await Promise.all([
+      ...bands.map(async b => {
+        try {
+          const slSnap = await getDocs(collection(db, 'bands', b.id, 'setlists'));
+          slSnap.forEach(d => collect(d.data(), d.id, b.name || 'Band',
+            'setlist.html?band=' + encodeURIComponent(b.id) + '&id=' + encodeURIComponent(d.id)));
+        } catch {}
+      }),
+      // Personal practice lists (no band) live here too
+      (async () => {
+        try {
+          const mySnap = await getDocs(collection(db, 'users', user.uid, 'setlists'));
+          mySnap.forEach(d => collect(d.data(), d.id, '🎯 Personal',
+            'setlist.html?mine=1&id=' + encodeURIComponent(d.id)));
+        } catch {}
+      })()
+    ]);
     gigs.sort((a, b) => a.gigDate.localeCompare(b.gigDate));
     standing.sort((a, b) => (a.bandName + a.name).localeCompare(b.bandName + b.name));
     renderGigs(gigs);
@@ -234,7 +245,7 @@ function renderGigs(gigs) {
     const days = daysUntil(g.gigDate);
     const a = document.createElement('a');
     a.className = 'gig-card';
-    a.href = 'setlist.html?band=' + encodeURIComponent(g.bandId) + '&id=' + encodeURIComponent(g.id);
+    a.href = g.href;
     a.innerHTML = `
       <div class="gig-when">
         <div class="gw-days">${days === 0 ? '🎶' : days}</div>
@@ -261,7 +272,7 @@ function renderStanding(items) {
   items.forEach(s => {
     const a = document.createElement('a');
     a.className = 'gig-card';
-    a.href = 'setlist.html?band=' + encodeURIComponent(s.bandId) + '&id=' + encodeURIComponent(s.id);
+    a.href = s.href;
     a.innerHTML = `
       <div class="gig-when"><div class="gw-days" style="font-size:1.3rem">🎵</div><div class="gw-lbl">no date</div></div>
       <div class="gig-main">

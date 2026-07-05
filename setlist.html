@@ -361,16 +361,22 @@ const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const bandId = params.get('band') || '';
 const setlistId = params.get('id') || '';
+// Personal practice list mode: setlist.html?mine=1&id=… — no band involved.
+// The setlist lives at users/{uid}/setlists and songs come from the Library.
+const personal = !bandId && params.get('mine') === '1';
 
 let user = null;
 let band = null;
 let setlist = null;        // { name, gigDate, sets: [{title, songIds:[]}] }
-let songMap = {};          // repertoireId -> song
+let songMap = {};          // repertoireId (or library songId in personal mode) -> song
 let saveTimer = null;
 
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1600); }
-function setlistDoc() { return doc(db, 'bands', bandId, 'setlists', setlistId); }
+function setlistDoc() { return personal ? doc(db, 'users', user.uid, 'setlists', setlistId) : doc(db, 'bands', bandId, 'setlists', setlistId); }
+// Where a row's 📖 book button goes: the private song page in personal mode, the band song page otherwise.
+const bookHref = sid => personal ? 'song.html?id=' + encodeURIComponent(sid)
+  : 'band-song.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(sid);
 function ytSearch(s) { return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${s.title||''} ${s.artist||''}`.trim()); }
 function ytLink(s) { return s.youtube || ytSearch(s); }
 // Display name for a song in THIS setlist — a stage nickname if set, else the real title.
@@ -422,28 +428,51 @@ onAuthStateChanged(auth, async u => {
 });
 
 async function load() {
-  if (!bandId || !setlistId) { $('loading').textContent = 'Missing setlist reference.'; return; }
+  if ((!personal && !bandId) || !setlistId) { $('loading').textContent = 'Missing setlist reference.'; return; }
   try {
-    const [bandSnap, slSnap, repSnap] = await Promise.all([
-      getDoc(doc(db, 'bands', bandId)),
-      getDoc(setlistDoc()),
-      getDocs(collection(db, 'bands', bandId, 'repertoire'))
-    ]);
-    if (!bandSnap.exists()) { $('loading').innerHTML = 'Band not found. <a href="bands.html">Back</a>'; return; }
-    if (!slSnap.exists()) { $('loading').innerHTML = 'Setlist not found. <a href="band.html?id=' + encodeURIComponent(bandId) + '">Back to band</a>'; return; }
-    band = bandSnap.data();
-    setlist = slSnap.data();
+    if (personal) {
+      const [slSnap, libSnap] = await Promise.all([
+        getDoc(setlistDoc()),
+        getDocs(collection(db, 'users', user.uid, 'songs'))
+      ]);
+      if (!slSnap.exists()) { $('loading').innerHTML = 'Practice list not found. <a href="library.html">Back to Library</a>'; return; }
+      band = { name: '' };   // no band — keeps share/print text clean
+      setlist = slSnap.data();
+      songMap = {};
+      libSnap.docs.forEach(d => { songMap[d.id] = { id: d.id, ...d.data() }; });
+    } else {
+      const [bandSnap, slSnap, repSnap] = await Promise.all([
+        getDoc(doc(db, 'bands', bandId)),
+        getDoc(setlistDoc()),
+        getDocs(collection(db, 'bands', bandId, 'repertoire'))
+      ]);
+      if (!bandSnap.exists()) { $('loading').innerHTML = 'Band not found. <a href="bands.html">Back</a>'; return; }
+      if (!slSnap.exists()) { $('loading').innerHTML = 'Setlist not found. <a href="band.html?id=' + encodeURIComponent(bandId) + '">Back to band</a>'; return; }
+      band = bandSnap.data();
+      setlist = slSnap.data();
+      songMap = {};
+      repSnap.docs.forEach(d => { songMap[d.id] = { id: d.id, ...d.data() }; });
+    }
     if (!Array.isArray(setlist.sets) || !setlist.sets.length) setlist.sets = [{ title: 'Set 1', songIds: [] }];
     if (!setlist.nicks || typeof setlist.nicks !== 'object') setlist.nicks = {};
-    songMap = {};
-    repSnap.docs.forEach(d => { songMap[d.id] = { id: d.id, ...d.data() }; });
   } catch (e) {
     $('loading').textContent = 'Could not load setlist: ' + (e.code || e.message);
     return;
   }
 
-  $('backLink').href = 'band.html?id=' + encodeURIComponent(bandId);
-  $('topTitle').textContent = (band.name || 'Band') + ' — Setlist';
+  if (personal) {
+    $('backLink').href = 'library.html';
+    $('backLink').textContent = '← Back to Library';
+    $('topTitle').textContent = 'My Practice List';
+    $('notifyBtn').style.display = 'none';
+    $('pickSearch').placeholder = 'Filter your Library…';
+    document.querySelector('.picker-new-hint').textContent = 'Pick a suggestion or press “Add new”. Adds it to this list and your Library.';
+    document.querySelector('.sem-note').textContent = 'This corrects the song in your personal Library.';
+    document.querySelector('.sl-date-row span').textContent = 'Gig / target date:';
+  } else {
+    $('backLink').href = 'band.html?id=' + encodeURIComponent(bandId);
+    $('topTitle').textContent = (band.name || 'Band') + ' — Setlist';
+  }
   document.title = (setlist.name || 'Setlist') + ' — The Setlist Book';
   $('slNameInput').value = setlist.name || '';
   $('slDateInput').value = setlist.gigDate || '';
@@ -576,7 +605,7 @@ function songRow(sid, si, pos) {
     <span class="sl-brk"></span>
     ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
     ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Play saved video' : 'Search YouTube'}">▶</a>` : ''}
-    ${s ? `<a class="sl-play sl-notes" href="band-song.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sid)}" title="Notes, references & discussion">📖</a>` : ''}
+    ${s ? `<a class="sl-play sl-notes" href="${bookHref(sid)}" title="${personal ? 'Your song page — notes, tabs, MP3' : 'Notes, references & discussion'}">📖</a>` : ''}
     ${s ? `<a class="sl-play sl-search" href="${esc(ytSearch(s))}" target="_blank" title="Search YouTube">🔍</a>` : ''}
     ${s ? `<button class="sl-edit" title="Fix this song's details (title, artist, key, video)">✏️</button>` : ''}
     <button class="sl-nick ${nick ? 'on' : ''}" title="Stage name (nickname) for this song">🏷</button>
@@ -662,7 +691,9 @@ function renderPicker(term) {
   const q = (term || '').trim().toLowerCase();
   const items = songs.filter(s => !q || (s.title || '').toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
   list.innerHTML = '';
-  if (!songs.length) { list.innerHTML = `<div class="set-empty">This band's song list is empty. Add songs on the <a href="band.html?id=${encodeURIComponent(bandId)}">band page</a> first.</div>`; return; }
+  if (!songs.length) { list.innerHTML = personal
+    ? `<div class="set-empty">Your Library is empty. Add songs in your <a href="library.html">Library</a> first — or use the “New” row below.</div>`
+    : `<div class="set-empty">This band's song list is empty. Add songs on the <a href="band.html?id=${encodeURIComponent(bandId)}">band page</a> first.</div>`; return; }
   if (!items.length) { list.innerHTML = `<div class="set-empty">No matches.</div>`; return; }
   items.forEach(s => {
     const row = document.createElement('div');
@@ -736,6 +767,28 @@ async function addNewSong(titleArg, artistArg) {
   const target = parseInt($('targetSet').value) || 0;
   const btn = $('newSongAdd'); btn.disabled = true;
   try {
+    if (personal) {
+      // Personal list: the song only needs to exist in your Library.
+      let libId = (Object.values(songMap).find(s => sameSong(s, { title, artist })) || {}).id;
+      if (!libId) {
+        const ref = await addDoc(collection(db, 'users', user.uid, 'songs'), {
+          title, artist, key: '', status: 'learning',
+          youtube: '', spotify: '', apple: '', songsterr: '', ug: '', tab1: '', tab2: '',
+          tempo: '', structure: '', tricky: '', notes: '', artwork: '',
+          mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+        libId = ref.id;
+        songMap[libId] = { id: libId, title, artist, key: '', youtube: '' };
+      }
+      setlist.sets[target].songIds.push(libId);
+      saveSets(); render();
+      $('newSongTitle').value = ''; $('newSongArtist').value = '';
+      hideNewSuggest();
+      $('newSongTitle').focus();
+      toast('Added to this list & your Library');
+      return;
+    }
     // 1) Band Song List (repertoire) — reuse if the same song already exists
     let repId = (Object.values(songMap).find(s => sameSong(s, { title, artist })) || {}).id;
     if (!repId) {
@@ -772,7 +825,8 @@ async function addNewSong(titleArg, artistArg) {
 // ── Duplicate this setlist ──
 $('dupBtn').addEventListener('click', async () => {
   try {
-    const ref = await addDoc(collection(db, 'bands', bandId, 'setlists'), {
+    const target = personal ? collection(db, 'users', user.uid, 'setlists') : collection(db, 'bands', bandId, 'setlists');
+    const ref = await addDoc(target, {
       name: (setlist.name || 'Setlist') + ' (copy)',
       gigDate: '',
       sets: setlist.sets.map(s => ({ title: s.title || 'Set', songIds: [...(s.songIds || [])] })),
@@ -780,7 +834,9 @@ $('dupBtn').addEventListener('click', async () => {
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
     toast('Duplicated — opening the copy…');
-    location.href = 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(ref.id);
+    location.href = personal
+      ? 'setlist.html?mine=1&id=' + encodeURIComponent(ref.id)
+      : 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(ref.id);
   } catch (e) { toast('Duplicate failed: ' + (e.code || e.message)); }
 });
 
@@ -810,10 +866,11 @@ $('semSave').addEventListener('click', async () => {
   if (!title) { toast('Title is required'); $('semTitle').focus(); return; }
   const upd = { title, artist: $('semArtist').value.trim(), key: $('semKey').value.trim(), youtube: normYt($('semYt').value), updatedAt: serverTimestamp() };
   try {
-    await updateDoc(doc(db, 'bands', bandId, 'repertoire', editSid), upd);
+    const target = personal ? doc(db, 'users', user.uid, 'songs', editSid) : doc(db, 'bands', bandId, 'repertoire', editSid);
+    await updateDoc(target, upd);
     Object.assign(songMap[editSid], { title: upd.title, artist: upd.artist, key: upd.key, youtube: upd.youtube });
     closeSongEdit(); render();
-    toast('Song updated everywhere');
+    toast(personal ? 'Song updated in your Library' : 'Song updated everywhere');
   } catch (e) { toast('Update failed: ' + (e.code || e.message)); }
 });
 
@@ -967,10 +1024,16 @@ function renderPractice() {
       ${id
         ? `<div class="pr-video"><iframe src="https://www.youtube.com/embed/${id}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`
         : `<a class="btn" href="${esc(ytLink(s))}" target="_blank">▶ Find on YouTube</a>`}
-      ${s.bandNotes ? `<div class="pr-band-notes"><span class="pr-bn-lbl">Band notes</span>${esc(s.bandNotes)}</div>` : ''}
-      ${Array.isArray(s.refs) && s.refs.length ? `<div class="pr-refs">${s.refs.map(r =>
-        `<a class="pr-ref" href="${esc(r.url)}" target="_blank">▶ ${esc(r.note || 'Reference')}</a>`).join('')}</div>` : ''}
-      <div style="margin-top:14px"><a class="btn ghost sm" href="band-song.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sid)}" target="_blank">📖 Full song page</a></div>
+      ${!personal && s.bandNotes ? `<div class="pr-band-notes"><span class="pr-bn-lbl">Band notes</span>${esc(s.bandNotes)}</div>` : ''}
+      ${personal && s.notes ? `<div class="pr-band-notes"><span class="pr-bn-lbl">Your notes</span>${esc(s.notes)}</div>` : ''}
+      ${(() => {
+        const links = personal
+          ? (Array.isArray(s.perfs) ? s.perfs.filter(p => p && p.url).map(p => ({ url: p.url, note: p.label })) : [])
+          : (Array.isArray(s.refs) ? s.refs : []);
+        return links.length ? `<div class="pr-refs">${links.map(r =>
+          `<a class="pr-ref" href="${esc(r.url)}" target="_blank">▶ ${esc(r.note || 'Reference')}</a>`).join('')}</div>` : '';
+      })()}
+      <div style="margin-top:14px"><a class="btn ghost sm" href="${bookHref(sid)}" target="_blank">📖 Full song page</a></div>
     </div>`;
   $('prPrev').disabled = prIdx === 0;
   $('prNext').textContent = prIdx === prQueue.length - 1 ? 'Finish ✓' : 'Next ▶';
