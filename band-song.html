@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song — The Setlist Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  .hero { background: linear-gradient(135deg, var(--brown) 0%, #1d1610 100%); padding: 26px 24px; }
+  .hero-inner { max-width: 860px; margin: 0 auto; }
+  .back-link { font-family: var(--font-label); font-size: 0.78rem; color: var(--tan); text-decoration: none; }
+  .back-link:hover { color: #fff; }
+  .hs-title { font-family: var(--font-display); font-weight: 600; color: #f6efe2; font-size: clamp(1.5rem,4vw,2.4rem); line-height: 1.1; margin-top: 6px; }
+  .hs-artist { color: var(--tan); font-style: italic; margin-top: 2px; }
+  .hero-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .hero-field { display: flex; align-items: center; gap: 6px; }
+  .hero-field label { font-family: var(--font-label); font-weight: 600; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(201,173,130,0.8); }
+  .hero-field input { background: rgba(255,255,255,0.1); border: 1px solid rgba(201,173,130,0.35); border-radius: 8px; color: #f6efe2; padding: 6px 9px; font-family: var(--font-body); font-size: 0.82rem; outline: none; }
+  .hero-field input:focus { border-color: var(--tan); }
+  .hero-field input.key { width: 58px; text-align: center; }
+  .hero-field input.yt { width: 240px; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 18px 90px; }
+  .zone-tag { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-label); font-weight: 700; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
+  .zone-tag.shared { background: rgba(179,74,38,0.1); color: var(--rust); border: 1px solid rgba(179,74,38,0.25); }
+  .zone-tag.private { background: rgba(62,125,79,0.1); color: var(--green); border: 1px solid rgba(62,125,79,0.3); }
+
+  .ref-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .ref-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
+  .ref-main { flex: 1; min-width: 0; }
+  .ref-note { font-weight: 600; font-size: 0.88rem; color: var(--brown); }
+  .ref-meta { font-size: 0.72rem; color: var(--faded); }
+  .ref-open { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(179,74,38,0.1); color: var(--rust); text-decoration: none; font-size: 12px; }
+  .ref-open:hover { background: var(--rust); color: #fff; }
+  .ref-del { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--faded); cursor: pointer; font-size: 12px; }
+  .ref-del:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
+  .ref-add { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ref-add input.url { flex: 2 1 200px; }
+  .ref-add input.note { flex: 2 1 160px; }
+  .ref-hint { font-size: 0.74rem; color: var(--faded); font-style: italic; margin-top: 8px; }
+
+  textarea.text-input { resize: vertical; min-height: 76px; line-height: 1.55; }
+  .save-note { font-family: var(--font-label); font-size: 0.68rem; color: var(--green); opacity: 0; transition: opacity 0.3s; margin-left: 8px; }
+  .save-note.show { opacity: 1; }
+
+  .comment-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .comment { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; }
+  .comment .c-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .comment .c-name { font-weight: 600; font-size: 0.8rem; color: var(--brown); }
+  .comment .c-time { font-size: 0.68rem; color: var(--faded); }
+  .comment .c-text { font-size: 0.88rem; white-space: pre-wrap; }
+  .comment .c-del { float: right; background: none; border: none; color: var(--faded); cursor: pointer; font-size: 11px; }
+  .comment .c-del:hover { color: var(--rust); }
+  .comment-add { display: flex; gap: 6px; align-items: flex-end; }
+  .comment-add textarea { flex: 1; min-height: 44px; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
+  .perf-share { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; margin-bottom: 6px; }
+  .perf-share .p-label { flex: 1; min-width: 0; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="index.html">The Setlist Book<small>Rehearsal → Stage</small></a>
+  <nav class="mainnav">
+    <a class="navlink" href="index.html">🏠 Dashboard</a>
+    <a class="navlink" href="library.html">📚 Library</a>
+    <a class="navlink active" href="bands.html">🎸 Bands</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <a class="user-chip" id="userChip" href="profile.html"></a>
+</div>
+
+<div id="gate" class="gate" style="display:none">
+  <h2>Please sign in</h2>
+  <p>Open the <a href="index.html">dashboard</a> and sign in with Google to view this song.</p>
+</div>
+<div class="loading" id="loading">Loading…</div>
+
+<div id="content" style="display:none">
+  <div class="hero">
+    <div class="hero-inner">
+      <a class="back-link" id="backBand" href="bands.html">← Back</a>
+      <div class="hs-title" id="hsTitle"></div>
+      <div class="hs-artist" id="hsArtist"></div>
+      <div class="hero-actions">
+        <a class="btn sm" id="playBtn" target="_blank">▶ Play</a>
+        <a class="btn sm ghost" id="searchBtn" target="_blank">🔍 Search YouTube</a>
+        <span class="hero-field"><label>Key</label><input class="key" id="keyInput" maxlength="6"></span>
+        <span class="hero-field"><label>Main video</label><input class="yt" id="ytInput" placeholder="YouTube URL or video id"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- BAND-SHARED ZONE -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">👥</span> Band — shared with everyone in <span id="bandNameHdr"></span> <span class="zone-tag shared" style="margin-left:auto">Shared</span></div>
+      <div class="panel-body">
+        <label class="field-label">Reference links — versions to learn from (bass covers, live takes, tutorials…)</label>
+        <div class="ref-list" id="refList"></div>
+        <div class="ref-add">
+          <input class="text-input url" id="refUrl" placeholder="YouTube (or any) URL…">
+          <input class="text-input note" id="refNote" placeholder="Note — e.g. “Bass cover to jam with”">
+          <button class="btn" id="refAddBtn">＋ Add</button>
+        </div>
+        <div class="ref-hint">Everyone in the band sees these. Only the person who added a link (or the band's creator) can remove it.</div>
+
+        <div style="margin-top:18px">
+          <label class="field-label">Shared band notes — arrangement, who solos, endings… <span class="save-note" id="bandNotesSaved">Saved ✓</span></label>
+          <textarea class="text-input" id="bandNotes" placeholder="Notes the whole band should see…"></textarea>
+        </div>
+
+        <div style="margin-top:18px">
+          <label class="field-label">Discussion</label>
+          <div class="comment-list" id="commentList"></div>
+          <div class="comment-add">
+            <textarea class="text-input" id="commentText" placeholder="Say something to the band about this song…"></textarea>
+            <button class="btn" id="commentBtn">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIVATE ZONE -->
+    <div class="panel">
+      <div class="panel-header"><span class="icon">🔒</span> Your private notes <span class="zone-tag private" style="margin-left:auto">Only you</span></div>
+      <div class="panel-body" id="privateBody">
+        <div class="empty-state" id="privateEmpty" style="display:none">
+          <p>This song isn't in your personal Library yet, so there's nowhere private to write.</p>
+          <button class="btn" id="addToLibBtn" style="margin-top:10px">＋ Add to my Library</button>
+        </div>
+        <div id="privateFields" style="display:none">
+          <div class="row-2">
+            <div><label class="field-label">Intro / Structure</label><textarea class="text-input" id="pvStructure"></textarea></div>
+            <div><label class="field-label">Tricky parts</label><textarea class="text-input" id="pvTricky"></textarea></div>
+          </div>
+          <label class="field-label">General notes <span class="save-note" id="pvSaved">Saved ✓</span></label>
+          <textarea class="text-input" id="pvNotes"></textarea>
+          <div style="margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <a class="btn ghost sm" id="fullPrivateLink">📖 Open your full private page (MP3, tabs, more)</a>
+          </div>
+          <div id="perfShareWrap" style="margin-top:16px; display:none">
+            <label class="field-label">Your saved performances — share one with the band</label>
+            <div id="perfShareList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { auth, db } from './firebase-init.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, getDocs, updateDoc, addDoc, deleteDoc, collection, query, orderBy,
+         onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const bandId = params.get('band') || '';
+const repId = params.get('id') || '';
+
+let user = null, band = null, rep = null, libSong = null;
+let commentsUnsub = null;
+let bandNotesTimer = null, pvTimer = null;
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
+const repDoc = () => doc(db, 'bands', bandId, 'repertoire', repId);
+const commentsCol = () => collection(db, 'bands', bandId, 'repertoire', repId, 'comments');
+const ytSearch = () => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${rep.title||''} ${rep.artist||''}`.trim());
+function normYt(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return 'https://www.youtube.com/watch?v=' + v;
+  return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+}
+const canDeleteRef = r => r.uid === user.uid || band.createdBy === user.uid;
+
+onAuthStateChanged(auth, async u => {
+  user = u;
+  if (commentsUnsub) { commentsUnsub(); commentsUnsub = null; }
+  if (!u) { $('gate').style.display = 'block'; $('loading').style.display = 'none'; $('content').style.display = 'none'; return; }
+  $('gate').style.display = 'none';
+  $('userChip').innerHTML = `${u.photoURL ? `<img src="${esc(u.photoURL)}" alt="">` : ''}<span class="uname">${esc(u.displayName || u.email)}</span>`;
+  await load();
+});
+
+async function load() {
+  if (!bandId || !repId) { $('loading').textContent = 'Missing song reference.'; return; }
+  try {
+    const [bSnap, rSnap] = await Promise.all([getDoc(doc(db, 'bands', bandId)), getDoc(repDoc())]);
+    if (!bSnap.exists() || !rSnap.exists()) { $('loading').innerHTML = 'Song not found. <a href="bands.html">Back to bands</a>'; return; }
+    band = bSnap.data(); rep = { id: rSnap.id, ...rSnap.data() };
+  } catch (e) { $('loading').textContent = 'Could not load: ' + (e.code || e.message); return; }
+
+  document.title = (rep.title || 'Song') + ' — ' + (band.name || 'Band');
+  $('backBand').href = 'band.html?id=' + encodeURIComponent(bandId);
+  $('backBand').textContent = '← ' + (band.name || 'Back to band');
+  $('bandNameHdr').textContent = band.name || 'this band';
+  $('hsTitle').textContent = rep.title || 'Untitled';
+  $('hsArtist').textContent = rep.artist || '';
+  $('keyInput').value = rep.key || '';
+  $('ytInput').value = rep.youtube || '';
+  $('bandNotes').value = rep.bandNotes || '';
+  refreshPlay();
+  renderRefs();
+
+  // live comments
+  commentsUnsub = onSnapshot(query(commentsCol(), orderBy('createdAt')), snap => {
+    renderComments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }, () => {});
+
+  await loadPrivate();
+
+  $('loading').style.display = 'none';
+  $('content').style.display = 'block';
+}
+
+function refreshPlay() {
+  $('playBtn').href = rep.youtube || ytSearch();
+  $('playBtn').textContent = rep.youtube ? '▶ Play' : '▶ Play (search)';
+  $('searchBtn').href = ytSearch();
+}
+
+// shared quick fields
+$('keyInput').addEventListener('change', () => {
+  rep.key = $('keyInput').value.trim();
+  updateDoc(repDoc(), { key: rep.key, updatedAt: serverTimestamp() }).then(() => toast('Key saved for the band')).catch(e => toast('Save failed'));
+});
+$('ytInput').addEventListener('change', () => {
+  rep.youtube = normYt($('ytInput').value);
+  $('ytInput').value = rep.youtube;
+  refreshPlay();
+  updateDoc(repDoc(), { youtube: rep.youtube, updatedAt: serverTimestamp() }).then(() => toast('Main video saved')).catch(e => toast('Save failed'));
+});
+
+// ── Reference links ──
+function renderRefs() {
+  const list = $('refList');
+  const refs = Array.isArray(rep.refs) ? rep.refs : [];
+  list.innerHTML = '';
+  if (!refs.length) { list.innerHTML = '<div class="ref-meta" style="padding:4px 2px">No reference links yet — add the first one below.</div>'; return; }
+  refs.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'ref-row';
+    row.innerHTML = `
+      <div class="ref-main">
+        <div class="ref-note">${esc(r.note || 'Reference')}</div>
+        <div class="ref-meta">added by ${esc(r.name || 'a bandmate')}</div>
+      </div>
+      <a class="ref-open" href="${esc(r.url)}" target="_blank" title="Open">▶</a>
+      ${canDeleteRef(r) ? '<button class="ref-del" title="Remove (yours)">✕</button>' : ''}`;
+    const del = row.querySelector('.ref-del');
+    if (del) del.addEventListener('click', async () => {
+      if (!confirm(`Remove "${r.note || r.url}"?`)) return;
+      rep.refs = rep.refs.filter(x => x.id !== r.id);
+      try { await updateDoc(repDoc(), { refs: rep.refs, updatedAt: serverTimestamp() }); renderRefs(); }
+      catch (e) { toast('Remove failed: ' + (e.code || e.message)); }
+    });
+    list.appendChild(row);
+  });
+}
+$('refAddBtn').addEventListener('click', addRef);
+$('refNote').addEventListener('keydown', e => { if (e.key === 'Enter') addRef(); });
+async function addRef(url, note) {
+  url = normYt(typeof url === 'string' ? url : $('refUrl').value);
+  note = (typeof note === 'string' ? note : $('refNote').value).trim();
+  if (!url) { toast('Paste a URL first'); $('refUrl').focus(); return; }
+  const entry = { id: 'r' + Math.random().toString(36).slice(2, 10), url, note, uid: user.uid, name: user.displayName || user.email || 'Member', ts: Date.now() };
+  rep.refs = [...(Array.isArray(rep.refs) ? rep.refs : []), entry];
+  try {
+    await updateDoc(repDoc(), { refs: rep.refs, updatedAt: serverTimestamp() });
+    $('refUrl').value = ''; $('refNote').value = '';
+    renderRefs(); toast('Shared with the band');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
+}
+
+// ── Shared band notes (debounced autosave) ──
+$('bandNotes').addEventListener('input', () => {
+  clearTimeout(bandNotesTimer);
+  bandNotesTimer = setTimeout(async () => {
+    try {
+      await updateDoc(repDoc(), { bandNotes: $('bandNotes').value.trim(), updatedAt: serverTimestamp() });
+      const n = $('bandNotesSaved'); n.classList.add('show'); setTimeout(() => n.classList.remove('show'), 1500);
+    } catch (e) { toast('Save failed'); }
+  }, 800);
+});
+
+// ── Comments ──
+function renderComments(items) {
+  const list = $('commentList');
+  list.innerHTML = '';
+  if (!items.length) { list.innerHTML = '<div class="ref-meta" style="padding:4px 2px">No comments yet.</div>'; return; }
+  items.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'comment';
+    const when = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    d.innerHTML = `
+      ${c.uid === user.uid ? '<button class="c-del" title="Delete your comment">✕</button>' : ''}
+      <div class="c-head"><span class="c-name">${esc(c.name || 'Member')}</span><span class="c-time">${esc(when)}</span></div>
+      <div class="c-text">${esc(c.text || '')}</div>`;
+    const del = d.querySelector('.c-del');
+    if (del) del.addEventListener('click', () => deleteDoc(doc(db, 'bands', bandId, 'repertoire', repId, 'comments', c.id)));
+    list.appendChild(d);
+  });
+  list.scrollTop = list.scrollHeight;
+}
+$('commentBtn').addEventListener('click', async () => {
+  const text = $('commentText').value.trim();
+  if (!text) return;
+  try {
+    await addDoc(commentsCol(), { text, uid: user.uid, name: user.displayName || user.email || 'Member', createdAt: serverTimestamp() });
+    $('commentText').value = '';
+  } catch (e) { toast('Post failed: ' + (e.code || e.message)); }
+});
+
+// ── Private zone ──
+async function loadPrivate() {
+  libSong = null;
+  try {
+    const snap = await getDocs(collection(db, 'users', user.uid, 'songs'));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    libSong = all.find(s => s.id === rep.sourceSongId)
+      || all.find(s => (s.title || '').toLowerCase() === (rep.title || '').toLowerCase()
+                    && (s.artist || '').toLowerCase() === (rep.artist || '').toLowerCase())
+      || null;
+  } catch {}
+  renderPrivate();
+}
+function renderPrivate() {
+  const has = !!libSong;
+  $('privateEmpty').style.display = has ? 'none' : '';
+  $('privateFields').style.display = has ? '' : 'none';
+  if (!has) return;
+  $('pvStructure').value = libSong.structure || '';
+  $('pvTricky').value = libSong.tricky || '';
+  $('pvNotes').value = libSong.notes || '';
+  $('fullPrivateLink').href = 'song.html?id=' + encodeURIComponent(libSong.id);
+  const perfs = Array.isArray(libSong.perfs) ? libSong.perfs.filter(p => p && p.url) : [];
+  $('perfShareWrap').style.display = perfs.length ? '' : 'none';
+  const list = $('perfShareList');
+  list.innerHTML = '';
+  perfs.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'perf-share';
+    row.innerHTML = `<span class="p-label">${esc(p.label || p.url)}</span><button class="btn sm ghost">Share with band →</button>`;
+    row.querySelector('button').addEventListener('click', () => addRef(p.url, p.label || 'Shared performance'));
+    list.appendChild(row);
+  });
+}
+['pvStructure', 'pvTricky', 'pvNotes'].forEach(id => $(id).addEventListener('input', () => {
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(async () => {
+    if (!libSong) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid, 'songs', libSong.id), {
+        structure: $('pvStructure').value.trim(), tricky: $('pvTricky').value.trim(),
+        notes: $('pvNotes').value.trim(), updatedAt: serverTimestamp()
+      });
+      const n = $('pvSaved'); n.classList.add('show'); setTimeout(() => n.classList.remove('show'), 1500);
+    } catch (e) { toast('Save failed'); }
+  }, 800);
+}));
+$('addToLibBtn').addEventListener('click', async () => {
+  try {
+    const ref = await addDoc(collection(db, 'users', user.uid, 'songs'), {
+      title: rep.title || '', artist: rep.artist || '', key: rep.key || '', status: 'learning',
+      youtube: rep.youtube || '', spotify: rep.spotify || '', apple: rep.apple || '',
+      songsterr: '', ug: '', tab1: '', tab2: '', tempo: '', structure: '', tricky: '', notes: '',
+      artwork: '', mp3Url: '', mp3Path: '', mp3Name: '', perfs: [],
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    libSong = { id: ref.id, title: rep.title, artist: rep.artist, structure: '', tricky: '', notes: '', perfs: [] };
+    renderPrivate();
+    toast('Added to your Library');
+  } catch (e) { toast('Add failed: ' + (e.code || e.message)); }
+});
+</script>
+</body>
+</html>

@@ -37,6 +37,10 @@
   .hero .hero-spacer { flex: 1; }
   .back-link { font-family: var(--font-label); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--tan); text-decoration: none; }
   .back-link:hover { color: var(--cream); }
+  .hero-members { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .hero-members .member-chip { background: rgba(255,255,255,0.09); color: rgba(230,214,185,0.9); border: 1px solid rgba(201,173,130,0.3); }
+  .song-open { cursor: pointer; }
+  .song-open:hover .song-title { color: var(--rust); }
 
   .wrap { max-width: 940px; margin: 0 auto; padding: 26px 18px 90px; }
 
@@ -189,6 +193,7 @@
         <a class="back-link" href="bands.html">← All bands</a>
         <div class="band-title" id="bandTitle">Band</div>
         <div class="band-desc" id="bandDesc"></div>
+        <div class="hero-members" id="heroMembers"></div>
       </div>
       <div class="hero-spacer"></div>
       <button class="btn ghost sm" id="settingsToggle">⚙ Band settings</button>
@@ -410,16 +415,18 @@ async function loadBand() {
 }
 
 function renderMembers() {
-  const row = $('membersRow');
-  row.innerHTML = '';
   const members = band.members || {};
-  Object.keys(members).forEach(uid => {
-    const m = members[uid];
-    const chip = document.createElement('span');
-    chip.className = 'member-chip';
-    chip.textContent = (m.name || 'Member') + (m.role ? ' · ' + m.role : '');
-    row.appendChild(chip);
-  });
+  for (const target of ['membersRow', 'heroMembers']) {
+    const row = $(target);
+    row.innerHTML = '';
+    Object.keys(members).forEach(uid => {
+      const m = members[uid];
+      const chip = document.createElement('span');
+      chip.className = 'member-chip';
+      chip.textContent = (m.name || 'Member') + (m.role ? ' · ' + m.role : '');
+      row.appendChild(chip);
+    });
+  }
 }
 
 // ── Song list render ──
@@ -467,7 +474,7 @@ function repRow(s) {
   item.className = 'song-item' + (editing ? ' editing' : '');
   item.innerHTML = `
     <div class="song-row">
-      <div class="song-cols">
+      <div class="song-cols song-open" title="Open song page — notes, references, discussion">
         <div class="song-title c-title">${esc(s.title)}</div>
         <div class="song-artist c-artist">${esc(s.artist || '—')}</div>
       </div>
@@ -493,6 +500,8 @@ function repRow(s) {
     </div>`;
 
   const row = item.querySelector('.song-row');
+  row.querySelector('.song-open').addEventListener('click', () =>
+    location.href = 'band-song.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(s.id));
   const keyInput = row.querySelector('.key-input');
   keyInput.addEventListener('change', () => updateDoc(repDoc(s.id), { key: keyInput.value.trim(), updatedAt: serverTimestamp() }));
   row.querySelector('.del').addEventListener('click', () => {
@@ -728,13 +737,15 @@ function renderSetlists() {
     const row = document.createElement('div');
     row.className = 'song-row';
     row.innerHTML = `
-      <div class="song-main">
+      <div class="song-main song-open" title="Open this setlist">
         <div class="song-title">${esc(sl.name || 'Untitled setlist')}</div>
         <div class="song-artist">${sl.gigDate ? esc(fmtDate(sl.gigDate)) + ' · ' : ''}${n} song${n === 1 ? '' : 's'}</div>
       </div>
       <a class="btn sm" href="setlist.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sl.id)}">Open ▸</a>
       <button class="icon-btn dup" title="Duplicate setlist">⧉</button>
       <button class="icon-btn del" title="Delete setlist">✕</button>`;
+    row.querySelector('.song-open').addEventListener('click', () =>
+      location.href = 'setlist.html?band=' + encodeURIComponent(bandId) + '&id=' + encodeURIComponent(sl.id));
     row.querySelector('.dup').addEventListener('click', () => duplicateSetlist(sl));
     row.querySelector('.del').addEventListener('click', () => {
       if (confirm(`Delete setlist "${sl.name || 'Untitled'}"?`)) deleteDoc(doc(db, 'bands', bandId, 'setlists', sl.id));
