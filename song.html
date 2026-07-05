@@ -4,35 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Song Detail</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
-    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
-    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a; --gold: #b8860b;
-  }
-  body {
-    background-color: var(--cream);
-    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.2) 27px, rgba(196,176,138,0.2) 28px);
-    font-family: 'Libre Baskerville', Georgia, serif;
-    color: var(--ink); min-height: 100vh; padding: 0 0 60px;
-  }
-  .topbar {
-    background: var(--brown); padding: 12px 24px;
-    display: flex; align-items: center; gap: 16px;
-    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
+
+
+
+
   .back-btn {
-    font-family: 'Special Elite', cursive; font-size: 0.75rem; color: var(--tan);
+    font-family: var(--font-label); font-size: 0.75rem; color: var(--tan);
     text-decoration: none; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;
     transition: color 0.15s;
   }
   .back-btn:hover { color: var(--cream); }
-  .topbar-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1rem; font-weight: 700; flex: 1; text-align: center; }
+  .topbar-title { font-family: var(--font-display); color: var(--cream); font-size: 1rem; font-weight: 700; flex: 1; text-align: center; }
   .save-top-btn {
-    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em;
-    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
+    font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.1em;
+    background: var(--rust); color: var(--cream); border: none; border-radius: 7px;
     padding: 7px 16px; cursor: pointer; transition: background 0.15s; text-transform: uppercase;
   }
   .save-top-btn:hover { background: var(--tan); color: var(--brown); }
@@ -40,10 +29,10 @@
   .hero { background: linear-gradient(135deg, var(--brown) 0%, #3a1e0c 100%); padding: 36px 32px 28px; position: relative; overflow: hidden; }
   .hero::after { content: '♩'; position: absolute; right: 32px; top: 16px; font-size: 120px; color: rgba(200,169,122,0.08); line-height: 1; pointer-events: none; font-family: serif; }
   .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
-  .song-title-big { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 3rem); color: var(--cream); font-weight: 700; line-height: 1.1; margin-bottom: 6px; }
-  .song-artist-big { font-family: 'Playfair Display', serif; font-style: italic; color: var(--tan); font-size: 1.1rem; margin-bottom: 20px; }
+  .song-title-big { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3rem); color: var(--cream); font-weight: 700; line-height: 1.1; margin-bottom: 6px; }
+  .song-artist-big { font-family: var(--font-display); font-style: italic; color: var(--tan); font-size: 1.1rem; margin-bottom: 20px; }
   .hero-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .meta-chip { font-family: 'Special Elite', cursive; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+  .meta-chip { font-family: var(--font-label); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
   .chip-known { background: rgba(58,107,58,0.35); color: #90d890; border: 1px solid rgba(58,107,58,0.5); }
   .chip-key { background: rgba(139,58,26,0.35); color: var(--tan); border: 1px solid rgba(139,58,26,0.5); }
   .chip-set { background: rgba(200,169,122,0.15); color: var(--tan); border: 1px solid rgba(200,169,122,0.3); }
@@ -53,27 +42,25 @@
   @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
   .full-col { margin-bottom: 24px; }
 
-  .panel { background: var(--parchment); border: 1px solid var(--tan); border-radius: 3px; overflow: hidden; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
-  .panel-header { background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line); padding: 10px 16px; font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded); display: flex; align-items: center; gap: 8px; }
-  .panel-header .icon { font-size: 14px; }
-  .panel-body { padding: 16px; }
+
+
+
 
   .video-wrap { position: relative; width: 100%; padding-bottom: 56.25%; background: #111; border-radius: 2px; overflow: hidden; }
   .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
-  .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--tan); font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.1em; gap: 10px; }
+  .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--tan); font-family: var(--font-label); font-size: 0.8rem; letter-spacing: 0.1em; gap: 10px; }
   .video-placeholder .play-icon { font-size: 40px; opacity: 0.4; }
   .vid-url-row { display: flex; gap: 6px; margin-top: 10px; }
   .vid-url-row input { flex: 1; }
 
   .songsterr-wrap { position: relative; width: 100%; height: 300px; background: #f8f8f8; border-radius: 2px; overflow: hidden; }
   .songsterr-wrap iframe { width: 100%; height: 100%; border: none; }
-  .ss-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--faded); font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.08em; gap: 8px; }
+  .ss-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--faded); font-family: var(--font-label); font-size: 0.8rem; letter-spacing: 0.08em; gap: 8px; }
   .ss-placeholder .ss-icon { font-size: 36px; opacity: 0.35; }
 
-  .field-label { font-family: 'Special Elite', cursive; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); margin-bottom: 5px; display: block; }
-  .text-input { width: 100%; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; padding: 7px 10px; font-family: 'Libre Baskerville', serif; font-size: 0.85rem; color: var(--ink); outline: none; transition: border-color 0.2s, background 0.2s; }
-  .text-input:focus { border-color: var(--rust); background: #fff; }
-  .text-input::placeholder { color: var(--tan); font-style: italic; }
+
+
+
   textarea.text-input { resize: vertical; min-height: 90px; line-height: 1.6; }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 480px) { .row-2 { grid-template-columns: 1fr; } }
@@ -83,42 +70,41 @@
   @media (max-width: 480px) { .tabs-grid { grid-template-columns: 1fr; } }
   .tab-entry { display: flex; flex-direction: column; gap: 4px; }
   .tab-link-row { display: flex; gap: 6px; }
-  .tab-go { flex-shrink: 0; width: 30px; height: 33px; background: var(--rust); border: none; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s; }
+  .tab-go { flex-shrink: 0; width: 30px; height: 33px; background: var(--rust); border: none; border-radius: 7px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s; }
   .tab-go:hover { background: var(--brown); }
   .tab-go.disabled { background: var(--line); pointer-events: none; }
   .tab-go svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
   /* MP3 uploader */
-  .mp3-drop { border: 1px dashed var(--tan); border-radius: 4px; padding: 16px; text-align: center; background: rgba(255,255,255,0.35); }
+  .mp3-drop { border: 1px dashed var(--tan); border-radius: 9px; padding: 16px; text-align: center; background: rgba(255,255,255,0.35); }
   .mp3-drop.has-file { border-style: solid; text-align: left; }
   .mp3-current { display: flex; align-items: center; gap: 12px; }
   .mp3-current audio { flex: 1; min-width: 0; height: 38px; }
   .mp3-name { font-size: 0.78rem; color: var(--faded); margin-bottom: 8px; word-break: break-all; }
-  .upload-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Special Elite', cursive; font-size: 0.75rem; letter-spacing: 0.06em; background: var(--rust); color: var(--cream); border: none; border-radius: 3px; padding: 9px 16px; }
+  .upload-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: var(--font-label); font-size: 0.75rem; letter-spacing: 0.06em; background: var(--rust); color: var(--cream); border: none; border-radius: 7px; padding: 9px 16px; }
   .upload-btn:hover { background: var(--brown); }
-  .mp3-hint { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); font-size: 0.76rem; margin-top: 8px; }
-  .mp3-del { background: rgba(139,58,26,0.12); border: 1px solid rgba(139,58,26,0.25); color: var(--rust); border-radius: 3px; padding: 6px 10px; font-family: 'Special Elite', cursive; font-size: 0.7rem; cursor: pointer; }
+  .mp3-hint { font-family: var(--font-display); font-style: italic; color: var(--faded); font-size: 0.76rem; margin-top: 8px; }
+  .mp3-del { background: rgba(139,58,26,0.12); border: 1px solid rgba(139,58,26,0.25); color: var(--rust); border-radius: 7px; padding: 6px 10px; font-family: var(--font-label); font-size: 0.7rem; cursor: pointer; }
   .mp3-del:hover { background: var(--rust); color: white; }
 
   .perf-list { display: flex; flex-direction: column; gap: 8px; }
-  .perf-item { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; }
-  .perf-item input { flex: 1; background: transparent; border: none; outline: none; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); }
+  .perf-item { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; }
+  .perf-item input { flex: 1; background: transparent; border: none; outline: none; font-family: var(--font-body); font-size: 0.82rem; color: var(--ink); }
   .perf-item input::placeholder { color: var(--tan); font-style: italic; }
   .perf-item-url { font-size: 0.72rem; color: var(--faded); }
-  .perf-open { flex-shrink: 0; width: 26px; height: 26px; background: var(--rust); border: none; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s; }
+  .perf-open { flex-shrink: 0; width: 26px; height: 26px; background: var(--rust); border: none; border-radius: 7px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.15s; }
   .perf-open:hover { background: var(--brown); }
   .perf-open.disabled { background: var(--line); pointer-events: none; }
   .perf-open svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .perf-delete { flex-shrink: 0; width: 26px; height: 26px; background: rgba(139,58,26,0.15); border: 1px solid rgba(139,58,26,0.2); border-radius: 3px; color: var(--rust); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; transition: background 0.15s; }
+  .perf-delete { flex-shrink: 0; width: 26px; height: 26px; background: rgba(139,58,26,0.15); border: 1px solid rgba(139,58,26,0.2); border-radius: 7px; color: var(--rust); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; transition: background 0.15s; }
   .perf-delete:hover { background: var(--rust); color: white; }
-  .add-perf-btn { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.1em; background: rgba(74,46,26,0.08); color: var(--brown); border: 1px dashed var(--tan); border-radius: 3px; padding: 8px 16px; cursor: pointer; width: 100%; text-transform: uppercase; transition: background 0.15s; margin-top: 8px; }
+  .add-perf-btn { font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.1em; background: rgba(74,46,26,0.08); color: var(--brown); border: 1px dashed var(--tan); border-radius: 7px; padding: 8px 16px; cursor: pointer; width: 100%; text-transform: uppercase; transition: background 0.15s; margin-top: 8px; }
   .add-perf-btn:hover { background: rgba(74,46,26,0.15); }
 
-  #saveFlash { position: fixed; bottom: 20px; right: 20px; background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive; font-size: 0.8rem; letter-spacing: 0.1em; padding: 10px 20px; border-radius: 4px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; pointer-events: none; text-transform: uppercase; }
+  #saveFlash { position: fixed; bottom: 20px; right: 20px; background: var(--brown); color: var(--cream); font-family: var(--font-label); font-size: 0.8rem; letter-spacing: 0.1em; padding: 10px 20px; border-radius: 9px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; pointer-events: none; text-transform: uppercase; }
   #saveFlash.show { opacity: 1; }
 
-  .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
-  .gate h2 { font-family: 'Special Elite', cursive; color: var(--brown); margin-bottom: 10px; }
+
 </style>
 </head>
 <body>
@@ -155,10 +141,10 @@
           </div>
           <div class="vid-url-row" style="margin-top:10px">
             <input class="text-input" id="ytInput" type="url" placeholder="https://youtube.com/watch?v=… (or paste a video id)" style="font-size:0.75rem;padding:6px 8px;">
-            <button onclick="loadYT()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:'Special Elite',cursive;font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+            <button onclick="loadYT()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:var(--font-label);font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
           </div>
           <div style="margin-top:7px">
-            <a id="ytSearchLink" href="#" target="_blank" style="font-family:'Special Elite',cursive;font-size:0.68rem;letter-spacing:0.06em;color:var(--rust);text-decoration:none;">🔍 Search YouTube for this song →</a>
+            <a id="ytSearchLink" href="#" target="_blank" style="font-family:var(--font-label);font-size:0.68rem;letter-spacing:0.06em;color:var(--rust);text-decoration:none;">🔍 Search YouTube for this song →</a>
           </div>
         </div>
       </div>
@@ -171,7 +157,7 @@
           </div>
           <div class="vid-url-row" style="margin-top:10px">
             <input class="text-input" id="ssInput" type="url" placeholder="https://www.songsterr.com/a/wsa/…" style="font-size:0.75rem;padding:6px 8px;">
-            <button onclick="loadSS()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:'Special Elite',cursive;font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+            <button onclick="loadSS()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:var(--font-label);font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
           </div>
         </div>
       </div>

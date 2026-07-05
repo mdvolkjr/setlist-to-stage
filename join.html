@@ -4,24 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Join a Band — The Setlist Book</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --cream:#f5efe0; --parchment:#e8dcc8; --brown:#4a2e1a; --rust:#8b3a1a; --tan:#c8a97a; --ink:#2a1a0e; --faded:#7a6248; --line:#c4b08a; --green:#3a6b3a; }
-  body { background: linear-gradient(135deg, var(--brown), #2a1707); font-family: 'Libre Baskerville', Georgia, serif; color: var(--cream); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  body { background: linear-gradient(135deg, var(--brown), #2a1707); font-family: var(--font-body); color: var(--cream); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
   .card { max-width: 460px; width: 100%; }
   .ornament { color: var(--tan); font-size: 1.4rem; letter-spacing: 0.4em; margin-bottom: 14px; }
-  h1 { font-family: 'Special Elite', cursive; font-size: 2rem; letter-spacing: 0.03em; }
-  .sub { color: var(--tan); font-family: 'Playfair Display', serif; font-style: italic; margin: 10px 0 26px; }
-  .band-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.6rem; color: var(--cream); margin: 6px 0 4px; }
-  .btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; background: var(--rust); color: var(--cream); border: none; border-radius: 4px; padding: 13px 26px; font-family: 'Special Elite', cursive; font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s, background 0.15s; text-decoration: none; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; letter-spacing: 0.03em; }
+  .sub { color: var(--tan); font-family: var(--font-display); font-style: italic; margin: 10px 0 26px; }
+  .band-name { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: var(--cream); margin: 6px 0 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; background: var(--rust); color: var(--cream); border: none; border-radius: 9px; padding: 13px 26px; font-family: var(--font-label); font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s, background 0.15s; text-decoration: none; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
   .btn:hover { transform: scale(1.03); background: #a04020; }
   .google-btn { background: var(--cream); color: var(--ink); }
   .google-btn svg { width: 20px; height: 20px; }
   .muted { color: var(--tan); font-size: 0.8rem; margin-top: 18px; }
   .muted a { color: var(--cream); }
-  .err { color: #f0b0a0; font-family: 'Special Elite', cursive; font-size: 0.85rem; }
-  .spin { color: var(--tan); font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+  .err { color: #f0b0a0; font-family: var(--font-label); font-size: 0.85rem; }
+  .spin { color: var(--tan); font-family: var(--font-label); letter-spacing: 0.1em; }
 </style>
 </head>
 <body>

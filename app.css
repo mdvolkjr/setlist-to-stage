@@ -1,0 +1,163 @@
+/* ── app.css — shared design system ─────────────────────────────────────────
+   One place for the app shell (topbar, nav, buttons, panels, inputs, toasts)
+   and the design tokens. Pages keep only their page-specific styles inline;
+   anything a page redefines after this file wins (cascade = safety valve).
+   Fonts: Fraunces (display) + Inter (UI/body), loaded per page from Google.
+──────────────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* palette — same var names as before, refreshed values */
+  --cream: #faf8f2;        /* page background */
+  --parchment: #fdfbf6;    /* cards / panels */
+  --brown: #2b2118;        /* espresso — dark bars, headings on light */
+  --rust: #b34a26;         /* primary accent */
+  --rust-deep: #96391b;
+  --tan: #c9ad82;          /* warm accent on dark */
+  --ink: #261d13;          /* body text */
+  --faded: #8a7864;        /* secondary text */
+  --line: #e4dbc8;         /* hairlines / borders */
+  --green: #3e7d4f;        /* success / known */
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-label: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-s: 8px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --shadow-card: 0 1px 2px rgba(43,33,24,0.05), 0 8px 24px rgba(43,33,24,0.06);
+  --shadow-pop: 0 12px 40px rgba(20,14,8,0.35);
+}
+
+html { color-scheme: light; background: #f5f1e8; }
+
+body {
+  background: linear-gradient(180deg, #fbf9f4 0%, #f5f1e8 100%) fixed;
+  font-family: var(--font-body);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ── Top bar + nav ── */
+.topbar {
+  background: var(--brown);
+  padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 4px 16px rgba(20,14,8,0.18);
+}
+.brand { font-family: var(--font-display); font-weight: 600; color: #f6efe2; font-size: 1.06rem; text-decoration: none; line-height: 1.15; }
+.brand small { color: var(--tan); font-family: var(--font-label); font-weight: 600; font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; display: block; opacity: 0.75; }
+.topbar-spacer { flex: 1; }
+.mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.navlink {
+  font-family: var(--font-label); font-weight: 500; font-size: 0.84rem;
+  color: rgba(230,214,185,0.85); text-decoration: none;
+  padding: 7px 12px; border-radius: var(--radius-s);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.navlink:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.navlink.active { background: rgba(179,74,38,0.5); color: #fff; }
+.user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 9px 3px 3px; border-radius: 999px; transition: background 0.15s; }
+.user-chip:hover { background: rgba(255,255,255,0.08); }
+.user-chip.active-chip { background: rgba(179,74,38,0.5); }
+.user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
+.user-chip .uname { color: #f6efe2; font-size: 0.82rem; font-weight: 500; }
+
+/* ── Buttons ── */
+.btn {
+  font-family: var(--font-label); font-weight: 600; font-size: 0.82rem;
+  background: var(--rust); color: #fff; border: none; border-radius: var(--radius-s);
+  padding: 8px 15px; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background 0.15s, transform 0.08s;
+}
+.btn:hover { background: var(--rust-deep); }
+.btn:active { transform: scale(0.98); }
+.btn.ghost { background: rgba(255,255,255,0.07); border: 1px solid rgba(201,173,130,0.4); color: #dcc9a4; }
+.btn.ghost:hover { background: rgba(255,255,255,0.14); }
+.btn.sm { padding: 5px 11px; font-size: 0.76rem; }
+/* ghost buttons sitting on light content (not the dark topbar) */
+.wrap .btn.ghost, .panel .btn.ghost, .picker .btn.ghost, .create-card .btn.ghost {
+  background: #fff; border: 1px solid var(--line); color: var(--faded);
+}
+.wrap .btn.ghost:hover, .panel .btn.ghost:hover, .picker .btn.ghost:hover, .create-card .btn.ghost:hover {
+  border-color: var(--rust); color: var(--rust); background: #fff;
+}
+
+/* ── Panels / cards ── */
+.panel {
+  background: var(--parchment); border: 1px solid var(--line);
+  border-radius: var(--radius-l); overflow: hidden; margin-bottom: 22px;
+  box-shadow: var(--shadow-card);
+}
+.panel-header {
+  border-bottom: 1px solid var(--line); background: rgba(43,33,24,0.025);
+  padding: 12px 18px;
+  font-family: var(--font-label); font-weight: 700; font-size: 0.72rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded);
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-header .count { margin-left: auto; font-weight: 500; font-size: 0.72rem; text-transform: none; letter-spacing: 0.02em; opacity: 0.85; }
+.panel-header .icon { font-size: 14px; }
+.panel-body { padding: 18px; }
+
+/* ── Forms ── */
+.field-label {
+  font-family: var(--font-label); font-weight: 700; font-size: 0.62rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded);
+  margin-bottom: 5px; display: block;
+}
+.text-input {
+  width: 100%; background: #fff; border: 1px solid var(--line);
+  border-radius: var(--radius-s); padding: 9px 12px;
+  font-family: var(--font-body); font-size: 0.9rem; color: var(--ink); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.text-input:focus { border-color: var(--rust); box-shadow: 0 0 0 3px rgba(179,74,38,0.12); }
+.text-input::placeholder { color: #b6a68c; }
+
+/* ── Sort chips + two-column song text (Library + band Song List) ── */
+.sort-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sort-lbl { font-family: var(--font-label); font-weight: 700; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded); }
+.sort-btn {
+  background: #fff; border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+  font-family: var(--font-label); font-weight: 500; font-size: 0.76rem; color: var(--faded);
+  padding: 5px 13px; display: inline-flex; align-items: center; gap: 5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.sort-btn:hover { border-color: var(--rust); color: var(--rust); }
+.sort-btn.active { background: rgba(179,74,38,0.09); border-color: var(--rust); color: var(--rust); font-weight: 600; }
+.sort-btn .ar { font-size: 0.8em; }
+.song-cols { display: flex; flex: 1; min-width: 0; gap: 12px; align-items: baseline; }
+.c-title { flex: 1.6 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-artist { flex: 1.1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── States & feedback ── */
+.empty-state { text-align: center; color: var(--faded); padding: 26px 12px; }
+.empty-state .big { font-size: 1.9rem; opacity: 0.45; margin-bottom: 8px; }
+.empty-state p { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; }
+.loading { text-align: center; color: var(--faded); padding: 54px; font-family: var(--font-label); font-weight: 500; letter-spacing: 0.08em; }
+.gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
+.gate h2 { font-family: var(--font-display); font-weight: 600; color: var(--brown); margin-bottom: 10px; }
+.gate a { color: var(--rust); }
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--brown); color: #f6efe2;
+  font-family: var(--font-label); font-weight: 500; font-size: 0.82rem;
+  padding: 11px 20px; border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop); opacity: 0; pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s; z-index: 900;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 620px) { .user-chip .uname { display: none; } }
+
+/* spacing shim */
+.panel-body .sort-bar { margin-bottom: 12px; }

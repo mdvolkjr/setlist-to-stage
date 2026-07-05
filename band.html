@@ -4,92 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Band — The Setlist Book</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --cream: #f5efe0; --parchment: #e8dcc8; --brown: #4a2e1a;
-    --rust: #8b3a1a; --tan: #c8a97a; --ink: #2a1a0e;
-    --faded: #7a6248; --line: #c4b08a; --green: #3a6b3a;
-  }
-  body {
-    background-color: var(--cream);
-    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px);
-    font-family: 'Libre Baskerville', Georgia, serif;
-    color: var(--ink); min-height: 100vh;
-  }
-  .topbar {
-    background: var(--brown); padding: 12px 22px;
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
-  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
-  .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
-  .topbar-spacer { flex: 1; }
-  .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  .navlink {
-    font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em;
-    color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px;
-    display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s;
-  }
-  .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
-  .navlink.active { background: rgba(139,58,26,0.45); color: var(--cream); box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3); }
-  .user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 8px 3px 3px; border-radius: 20px; transition: background 0.15s; }
-  .user-chip:hover { background: rgba(255,255,255,0.09); }
-  .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
-  .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
-  .btn {
-    font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em;
-    background: var(--rust); color: var(--cream); border: none; border-radius: 3px;
-    padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .btn:hover { background: #a04020; }
-  .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
-  .btn.ghost:hover { background: rgba(255,255,255,0.15); }
-  .btn.sm { padding: 5px 10px; font-size: 0.68rem; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* Band hero */
   .hero { background: linear-gradient(135deg, var(--brown) 0%, #3a1e0c 100%); padding: 26px 24px; }
   .hero-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
-  .hero .band-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--cream); font-size: clamp(1.6rem,4vw,2.6rem); line-height: 1.05; }
-  .hero .band-desc { font-family: 'Playfair Display', serif; font-style: italic; color: var(--tan); font-size: 0.95rem; margin-top: 4px; }
+  .hero .band-title { font-family: var(--font-display); font-weight: 700; color: var(--cream); font-size: clamp(1.6rem,4vw,2.6rem); line-height: 1.05; }
+  .hero .band-desc { font-family: var(--font-display); font-style: italic; color: var(--tan); font-size: 0.95rem; margin-top: 4px; }
   .hero .hero-spacer { flex: 1; }
-  .back-link { font-family: 'Special Elite', cursive; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--tan); text-decoration: none; }
+  .back-link { font-family: var(--font-label); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--tan); text-decoration: none; }
   .back-link:hover { color: var(--cream); }
 
   .wrap { max-width: 940px; margin: 0 auto; padding: 26px 18px 90px; }
 
-  .panel { background: var(--parchment); border: 1px solid var(--tan); border-radius: 3px; overflow: hidden; margin-bottom: 22px; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); }
-  .panel-header {
-    background: rgba(74,46,26,0.08); border-bottom: 1px solid var(--line);
-    padding: 11px 16px; font-family: 'Special Elite', cursive; font-size: 0.75rem;
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .panel-header .count { margin-left: auto; opacity: 0.75; font-size: 0.7rem; text-transform: none; letter-spacing: 0.04em; }
+
+
 
   /* Band tab switcher */
   .band-tabs { display: flex; gap: 8px; margin: 0 -18px 18px; padding: 10px 18px; flex-wrap: wrap; position: sticky; top: 52px; z-index: 20; background: var(--cream); }
-  .band-tab { font-family: 'Special Elite', cursive; font-size: 0.82rem; letter-spacing: 0.05em; color: var(--faded); background: var(--parchment); border: 1px solid var(--tan); border-radius: 6px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+  .band-tab { font-family: var(--font-label); font-size: 0.82rem; letter-spacing: 0.05em; color: var(--faded); background: var(--parchment); border: 1px solid var(--tan); border-radius: 12px; padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
   .band-tab:hover { color: var(--brown); }
   .band-tab.active { background: var(--brown); color: var(--cream); box-shadow: 0 2px 8px rgba(74,46,26,0.25); }
   .bt-count { font-size: 0.68rem; opacity: 0.85; background: rgba(0,0,0,0.12); padding: 1px 7px; border-radius: 8px; }
   .band-tab.active .bt-count { background: rgba(255,255,255,0.18); }
-  .panel-body { padding: 16px; }
 
-  .field-label { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); margin-bottom: 5px; display: block; }
-  .text-input {
-    width: 100%; background: rgba(255,255,255,0.7); border: 1px solid var(--line);
-    border-radius: 3px; padding: 8px 10px; font-family: 'Libre Baskerville', serif;
-    font-size: 0.88rem; color: var(--ink); outline: none;
-  }
-  .text-input:focus { border-color: var(--rust); background: #fff; }
-  .text-input::placeholder { color: var(--tan); font-style: italic; }
+
+
+
+
 
   /* Add row */
   .add-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-  .manual-add { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: rgba(74,46,26,0.05); border: 1px dashed var(--tan); border-radius: 3px; }
+  .manual-add { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: rgba(74,46,26,0.05); border: 1px dashed var(--tan); border-radius: 7px; }
   .manual-add .ma-field { display: flex; flex-direction: column; }
   .manual-add .ma-title { flex: 2 1 160px; }
   .manual-add .ma-artist { flex: 2 1 130px; }
@@ -97,31 +66,31 @@
   .manual-add.hidden, .lib-picker.hidden { display: none; }
 
   /* Library picker */
-  .lib-picker { border: 1px solid var(--line); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+  .lib-picker { border: 1px solid var(--line); border-radius: 7px; margin-bottom: 12px; overflow: hidden; }
   .lib-picker-head { padding: 10px 12px; background: rgba(74,46,26,0.05); border-bottom: 1px solid var(--line); }
   .lib-picker-list { max-height: 300px; overflow-y: auto; }
   .lib-pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid rgba(196,176,138,0.4); }
   .lib-pick-row:last-child { border-bottom: none; }
   .lib-pick-row .lp-main { flex: 1; min-width: 0; }
-  .lib-pick-row .lp-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.88rem; }
+  .lib-pick-row .lp-title { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 0.88rem; }
   .lib-pick-row .lp-artist { font-size: 0.74rem; color: var(--faded); font-style: italic; }
   .lib-pick-row.added .lp-title { color: var(--faded); }
 
   /* Repertoire rows */
   .song-list { display: flex; flex-direction: column; gap: 8px; }
-  .song-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 3px; padding: 9px 12px; }
+  .song-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 7px; padding: 9px 12px; }
   .song-main { flex: 1; min-width: 0; }
-  .song-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 0.92rem; line-height: 1.2; }
+  .song-title { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 0.92rem; line-height: 1.2; }
   .song-artist { font-size: 0.75rem; color: var(--faded); font-style: italic; }
-  .key-input { width: 48px; flex-shrink: 0; text-align: center; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 3px; padding: 5px 3px; font-family: 'Special Elite', cursive; font-size: 0.8rem; color: var(--ink); outline: none; }
+  .key-input { width: 48px; flex-shrink: 0; text-align: center; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 7px; padding: 5px 3px; font-family: var(--font-label); font-size: 0.8rem; color: var(--ink); outline: none; }
   .key-input:focus { border-color: var(--rust); background: #fff; }
   .link-icons { display: flex; gap: 5px; flex-shrink: 0; }
-  .lnk { width: 27px; height: 27px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-decoration: none; cursor: pointer; }
+  .lnk { width: 27px; height: 27px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; text-decoration: none; cursor: pointer; }
   .lnk.yt { background: rgba(139,58,26,0.12); color: var(--rust); } .lnk.yt:hover { background: var(--rust); color: white; }
   .lnk.sp { background: rgba(58,107,58,0.12); color: var(--green); } .lnk.sp:hover { background: var(--green); color: white; }
   .lnk.ap { background: rgba(74,46,26,0.1); color: var(--brown); } .lnk.ap:hover { background: var(--brown); color: white; }
   .lnk.yts { background: rgba(200,169,122,0.18); color: var(--faded); font-size: 11px; } .lnk.yts:hover { background: var(--brown); color: white; }
-  .icon-btn { width: 29px; height: 28px; border-radius: 3px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .icon-btn { width: 29px; height: 28px; border-radius: 7px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
   .icon-btn.del { background: rgba(139,58,26,0.1); color: var(--rust); border: 1px solid rgba(139,58,26,0.2); }
   .icon-btn.del:hover { background: var(--rust); color: white; }
   .icon-btn.dup { background: rgba(74,46,26,0.1); color: var(--brown); border: 1px solid rgba(74,46,26,0.2); }
@@ -133,13 +102,13 @@
   /* Pop quiz */
   .quiz { position: fixed; inset: 0; z-index: 550; background: rgba(26,15,6,0.96); display: none; align-items: center; justify-content: center; padding: 20px; }
   .quiz.show { display: flex; }
-  .quiz-card { background: var(--parchment); border: 1px solid var(--tan); border-radius: 6px; padding: 30px 26px; max-width: 520px; width: 100%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-  .quiz-kicker { font-family: 'Special Elite', cursive; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded); margin-bottom: 12px; }
-  .quiz-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: clamp(1.6rem,4vw,2.4rem); line-height: 1.15; }
+  .quiz-card { background: var(--parchment); border: 1px solid var(--tan); border-radius: 12px; padding: 30px 26px; max-width: 520px; width: 100%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+  .quiz-kicker { font-family: var(--font-label); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faded); margin-bottom: 12px; }
+  .quiz-title { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: clamp(1.6rem,4vw,2.4rem); line-height: 1.15; }
   .quiz-reveal { min-height: 44px; margin: 14px 0 20px; color: var(--faded); }
-  .quiz-reveal .qr-artist { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.05rem; }
-  .quiz-reveal .qr-key { font-family: 'Special Elite', cursive; color: var(--rust); display: inline-block; margin-top: 6px; }
-  .quiz-reveal a { color: var(--rust); font-family: 'Special Elite', cursive; font-size: 0.85rem; }
+  .quiz-reveal .qr-artist { font-family: var(--font-display); font-style: italic; font-size: 1.05rem; }
+  .quiz-reveal .qr-key { font-family: var(--font-label); color: var(--rust); display: inline-block; margin-top: 6px; }
+  .quiz-reveal a { color: var(--rust); font-family: var(--font-label); font-size: 0.85rem; }
   .quiz-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
   /* Inline edit + filter */
@@ -147,50 +116,48 @@
   .rep-filter input { width: 100%; }
   .song-item { display: flex; flex-direction: column; }
   .song-item.editing .song-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-  .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .sort-lbl { font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faded); }
-  .sort-btn { background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; font-family: 'Special Elite', cursive; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--faded); padding: 5px 12px; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s, color 0.15s, border-color 0.15s; }
-  .sort-btn:hover { border-color: var(--rust); color: var(--rust); }
-  .sort-btn.active { background: rgba(139,58,26,0.12); border-color: var(--rust); color: var(--rust); }
-  .sort-btn .ar { font-size: 0.85em; }
-  .song-cols { display: flex; flex: 1; min-width: 0; gap: 12px; align-items: baseline; }
-  .c-title { flex: 1.6 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .c-artist { flex: 1.1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+
+
+
+
+
+
+
   .song-edit { display: none; background: rgba(74,46,26,0.05); border: 1px solid var(--line); border-top: none; border-radius: 0 0 3px 3px; padding: 13px; }
   .song-edit.show { display: block; }
   .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .edit-grid label { display: flex; flex-direction: column; gap: 4px; font-family: 'Special Elite', cursive; font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
+  .edit-grid label { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-label); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
   .edit-grid label.wide { grid-column: 1 / -1; }
-  .edit-grid .lbl-hint { text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.7; font-family: 'Playfair Display', serif; }
-  .edit-grid input { background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 3px; padding: 7px 9px; font-family: 'Libre Baskerville', serif; font-size: 0.82rem; color: var(--ink); outline: none; text-transform: none; letter-spacing: normal; }
+  .edit-grid .lbl-hint { text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.7; font-family: var(--font-display); }
+  .edit-grid input { background: rgba(255,255,255,0.75); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; font-family: var(--font-body); font-size: 0.82rem; color: var(--ink); outline: none; text-transform: none; letter-spacing: normal; }
   .edit-grid input:focus { border-color: var(--rust); background: #fff; }
   .edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 11px; }
-  .edit-saved { font-family: 'Special Elite', cursive; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+  .edit-saved { font-family: var(--font-label); font-size: 0.64rem; letter-spacing: 0.06em; color: var(--green); opacity: 0; transition: opacity 0.3s; }
   .edit-saved.show { opacity: 1; }
   @media (max-width: 560px) { .edit-grid { grid-template-columns: 1fr; } }
 
-  .empty-state { text-align: center; color: var(--faded); padding: 24px 10px; }
-  .empty-state .big { font-size: 1.8rem; opacity: 0.4; margin-bottom: 6px; }
-  .empty-state p { font-family: 'Playfair Display', serif; font-style: italic; }
+
+
 
   /* Settings + members */
   .members-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-  .member-chip { font-family: 'Special Elite', cursive; font-size: 0.66rem; letter-spacing: 0.04em; padding: 4px 11px; border-radius: 12px; background: rgba(139,58,26,0.12); color: var(--rust); border: 1px solid rgba(139,58,26,0.25); }
+  .member-chip { font-family: var(--font-label); font-size: 0.66rem; letter-spacing: 0.04em; padding: 4px 11px; border-radius: 12px; background: rgba(139,58,26,0.12); color: var(--rust); border: 1px solid rgba(139,58,26,0.25); }
   .settings-body { display: none; }
   .settings-body.show { display: block; }
   .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 560px) { .settings-grid { grid-template-columns: 1fr; } }
   .add-member { display: flex; gap: 8px; margin: 8px 0 6px; }
   .add-member input { flex: 1; }
-  .share-hint { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.76rem; color: var(--faded); margin-bottom: 14px; line-height: 1.5; }
+  .share-hint { font-family: var(--font-display); font-style: italic; font-size: 0.76rem; color: var(--faded); margin-bottom: 14px; line-height: 1.5; }
 
-  .soon-note { color: var(--faded); font-style: italic; font-family: 'Playfair Display', serif; text-align: center; padding: 10px 6px; line-height: 1.6; }
+  .soon-note { color: var(--faded); font-style: italic; font-family: var(--font-display); text-align: center; padding: 10px 6px; line-height: 1.6; }
 
-  .gate { max-width: 520px; margin: 80px auto; text-align: center; color: var(--faded); padding: 24px; }
-  .gate h2 { font-family: 'Special Elite', cursive; color: var(--brown); margin-bottom: 10px; }
-  .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
-  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--brown); color: var(--cream); font-family: 'Special Elite', cursive; font-size: 0.78rem; letter-spacing: 0.06em; padding: 10px 20px; border-radius: 4px; box-shadow: 2px 3px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 300; }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+
+
   @media (max-width: 620px) { .user-chip .uname { display: none; } .song-artist { display: none; } }
 </style>
 </head>
@@ -247,7 +214,7 @@
         </div>
         <div class="share-hint">Easiest way to add someone: send them the <strong>invite link</strong>. They open it, sign in with Google, and click <em>Join</em> — instantly sharing this band's Song List and every setlist. Any member's edits (setlists, keys, links) are seen by everyone.</div>
         <details style="margin-bottom:14px">
-          <summary style="cursor:pointer;font-family:'Special Elite',cursive;font-size:0.66rem;letter-spacing:0.06em;color:var(--faded);">Or add by Member ID</summary>
+          <summary style="cursor:pointer;font-family:var(--font-label);font-size:0.66rem;letter-spacing:0.06em;color:var(--faded);">Or add by Member ID</summary>
           <div class="add-member" style="margin-top:8px">
             <input class="text-input" id="newMemberId" type="text" placeholder="Paste their Member ID (from their Profile)" autocomplete="off">
             <button class="btn" id="addMemberBtn">＋ Add</button>

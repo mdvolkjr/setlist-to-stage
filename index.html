@@ -4,75 +4,75 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Setlist Book — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --cream:#f5efe0; --parchment:#e8dcc8; --brown:#4a2e1a; --rust:#8b3a1a; --tan:#c8a97a; --ink:#2a1a0e; --faded:#7a6248; --line:#c4b08a; --green:#3a6b3a; }
-  body { background-color: var(--cream); background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(196,176,138,0.22) 27px, rgba(196,176,138,0.22) 28px); font-family: 'Libre Baskerville', Georgia, serif; color: var(--ink); min-height: 100vh; }
 
-  .topbar { background: var(--brown); padding: 12px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
-  .brand { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 1rem; letter-spacing: 0.08em; text-decoration: none; }
-  .brand small { color: var(--tan); font-size: 0.62rem; letter-spacing: 0.15em; display: block; opacity: 0.7; }
-  .topbar-spacer { flex: 1; }
-  .mainnav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  .navlink { font-family: 'Special Elite', cursive; font-size: 0.74rem; letter-spacing: 0.05em; color: var(--tan); text-decoration: none; padding: 7px 11px; border-radius: 3px; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; }
-  .navlink:hover { background: rgba(255,255,255,0.09); color: var(--cream); }
-  .navlink.active { background: rgba(139,58,26,0.45); color: var(--cream); box-shadow: inset 0 0 0 1px rgba(200,169,122,0.3); }
-  .user-chip { display: flex; align-items: center; gap: 9px; text-decoration: none; padding: 3px 8px 3px 3px; border-radius: 20px; transition: background 0.15s; }
-  .user-chip:hover { background: rgba(255,255,255,0.09); }
-  .user-chip img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--tan); }
-  .user-chip .uname { color: var(--cream); font-size: 0.8rem; }
-  .btn { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.08em; background: var(--rust); color: var(--cream); border: none; border-radius: 3px; padding: 7px 14px; cursor: pointer; transition: background 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-  .btn:hover { background: #a04020; }
-  .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(200,169,122,0.3); color: var(--tan); }
-  .btn.ghost:hover { background: rgba(255,255,255,0.15); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* Sign-in */
   .signin-screen { display: none; position: fixed; inset: 0; z-index: 200; background: linear-gradient(135deg, var(--brown), #2a1707); align-items: center; justify-content: center; text-align: center; padding: 24px; }
   .signin-screen.show { display: flex; }
   .signin-card { max-width: 420px; }
   .signin-card .ornament { color: var(--tan); font-size: 1.4rem; letter-spacing: 0.4em; margin-bottom: 14px; }
-  .signin-card h1 { font-family: 'Special Elite', cursive; color: var(--cream); font-size: 2.2rem; letter-spacing: 0.03em; }
-  .signin-card p { color: var(--tan); font-family: 'Playfair Display', serif; font-style: italic; margin: 12px 0 30px; }
-  .google-btn { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; background: var(--cream); color: var(--ink); border: none; border-radius: 4px; padding: 13px 24px; font-family: 'Special Elite', cursive; font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
+  .signin-card h1 { font-family: var(--font-display); font-weight: 600; color: var(--cream); font-size: 2.2rem; letter-spacing: 0.03em; }
+  .signin-card p { color: var(--tan); font-family: var(--font-display); font-style: italic; margin: 12px 0 30px; }
+  .google-btn { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; background: var(--cream); color: var(--ink); border: none; border-radius: 9px; padding: 13px 24px; font-family: var(--font-label); font-size: 0.9rem; letter-spacing: 0.05em; transition: transform 0.12s; box-shadow: 2px 3px 12px rgba(0,0,0,0.35); }
   .google-btn:hover { transform: scale(1.03); }
   .google-btn svg { width: 20px; height: 20px; }
 
   .wrap { max-width: 1000px; margin: 0 auto; padding: 36px 18px 90px; }
   .greeting { text-align: center; margin-bottom: 30px; }
   .greeting .ornament { color: var(--tan); font-size: 1.1rem; letter-spacing: 0.3em; margin-bottom: 6px; }
-  .greeting h1 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: clamp(1.8rem,4vw,2.8rem); letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
-  .greeting .subtitle { font-family: 'Playfair Display', serif; font-style: italic; color: var(--faded); margin-top: 5px; }
+  .greeting h1 { font-family: var(--font-display); font-weight: 600; color: var(--brown); font-size: clamp(1.8rem,4vw,2.8rem); letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+  .greeting .subtitle { font-family: var(--font-display); font-style: italic; color: var(--faded); margin-top: 5px; }
 
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 34px; }
   .tile { display: block; text-decoration: none; background: var(--parchment); border: 1px solid var(--tan); border-radius: 5px; padding: 22px 20px; box-shadow: 2px 3px 12px rgba(74,46,26,0.1); transition: transform 0.12s, box-shadow 0.15s; }
   .tile:hover { transform: translateY(-3px); box-shadow: 3px 6px 18px rgba(74,46,26,0.2); }
   .tile .t-icon { font-size: 1.9rem; }
-  .tile .t-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.3rem; margin-top: 8px; }
-  .tile .t-sub { font-family: 'Special Elite', cursive; font-size: 0.72rem; letter-spacing: 0.05em; color: var(--faded); margin-top: 4px; }
+  .tile .t-name { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 1.3rem; margin-top: 8px; }
+  .tile .t-sub { font-family: var(--font-label); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--faded); margin-top: 4px; }
 
   .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
-  .section-head h2 { font-family: 'Special Elite', cursive; color: var(--brown); font-size: 1.05rem; letter-spacing: 0.06em; }
-  .section-head .count { font-family: 'Special Elite', cursive; color: var(--faded); font-size: 0.75rem; opacity: 0.75; }
+  .section-head h2 { font-family: var(--font-label); color: var(--brown); font-size: 1.05rem; letter-spacing: 0.06em; }
+  .section-head .count { font-family: var(--font-label); color: var(--faded); font-size: 0.75rem; opacity: 0.75; }
 
   .gig-list { display: flex; flex-direction: column; gap: 10px; }
-  .gig-card { display: flex; align-items: center; gap: 14px; text-decoration: none; background: var(--parchment); border: 1px solid var(--line); border-radius: 4px; padding: 13px 16px; transition: box-shadow 0.15s; }
+  .gig-card { display: flex; align-items: center; gap: 14px; text-decoration: none; background: var(--parchment); border: 1px solid var(--line); border-radius: 9px; padding: 13px 16px; transition: box-shadow 0.15s; }
   .gig-card:hover { box-shadow: 1px 2px 10px rgba(74,46,26,0.15); }
   .gig-when { flex-shrink: 0; text-align: center; min-width: 62px; }
-  .gig-when .gw-days { font-family: 'Special Elite', cursive; font-size: 1.4rem; font-weight: bold; color: var(--rust); line-height: 1; }
-  .gig-when .gw-lbl { font-family: 'Special Elite', cursive; font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
+  .gig-when .gw-days { font-family: var(--font-label); font-size: 1.4rem; font-weight: bold; color: var(--rust); line-height: 1; }
+  .gig-when .gw-lbl { font-family: var(--font-label); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faded); }
   .gig-main { flex: 1; min-width: 0; }
-  .gig-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--brown); font-size: 1.05rem; }
+  .gig-name { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 1.05rem; }
   .gig-meta { font-size: 0.78rem; color: var(--faded); font-style: italic; }
-  .gig-date { flex-shrink: 0; font-family: 'Special Elite', cursive; font-size: 0.78rem; color: var(--faded); text-align: right; }
-  .gig-badge { display: inline-block; font-family: 'Special Elite', cursive; font-size: 0.6rem; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 10px; margin-top: 3px; }
+  .gig-date { flex-shrink: 0; font-family: var(--font-label); font-size: 0.78rem; color: var(--faded); text-align: right; }
+  .gig-badge { display: inline-block; font-family: var(--font-label); font-size: 0.6rem; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 10px; margin-top: 3px; }
   .gig-badge.soon { background: rgba(139,58,26,0.15); color: var(--rust); border: 1px solid rgba(139,58,26,0.3); }
   .gig-badge.later { background: rgba(58,107,58,0.12); color: var(--green); border: 1px solid rgba(58,107,58,0.3); }
 
-  .empty-state { text-align: center; color: var(--faded); padding: 24px 10px; }
-  .empty-state .big { font-size: 1.8rem; opacity: 0.4; margin-bottom: 6px; }
-  .empty-state p { font-family: 'Playfair Display', serif; font-style: italic; }
-  .loading { text-align: center; color: var(--faded); padding: 50px; font-family: 'Special Elite', cursive; letter-spacing: 0.1em; }
+
+
+
   @media (max-width: 620px) { .user-chip .uname { display: none; } .gig-date { display: none; } }
 </style>
 </head>
