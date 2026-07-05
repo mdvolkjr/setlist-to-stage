@@ -150,15 +150,34 @@
       </div>
 
       <div class="panel">
-        <div class="panel-header"><span class="icon">🎵</span> Songsterr — Tab Preview</div>
+        <div class="panel-header"><span class="icon">🎼</span> Tabs — Songsterr &amp; Ultimate Guitar</div>
         <div class="panel-body">
-          <div class="songsterr-wrap" id="ssWrap">
-            <div class="ss-placeholder" id="ssPlaceholder"><div class="ss-icon">🎸</div><span>No Songsterr URL saved</span></div>
+          <label class="field-label">Songsterr</label>
+          <div class="vid-url-row">
+            <input class="text-input" id="ssInput" type="url" placeholder="Paste your Songsterr tab URL…" style="font-size:0.75rem;padding:6px 8px;">
+            <a class="btn sm" id="ssOpen" target="_blank" style="display:none">Open ↗</a>
           </div>
-          <div class="vid-url-row" style="margin-top:10px">
-            <input class="text-input" id="ssInput" type="url" placeholder="https://www.songsterr.com/a/wsa/…" style="font-size:0.75rem;padding:6px 8px;">
-            <button onclick="loadSS()" style="flex-shrink:0;padding:0 14px;background:var(--rust);color:var(--cream);border:none;border-radius:3px;cursor:pointer;font-family:var(--font-label);font-size:0.72rem;letter-spacing:0.08em;">LOAD</button>
+          <div style="margin-top:6px"><a id="ssSearchLink" href="#" target="_blank" style="font-family:var(--font-label);font-size:0.72rem;color:var(--rust);text-decoration:none;">🔍 Search Songsterr for this song →</a></div>
+
+          <label class="field-label" style="margin-top:16px">Ultimate Guitar</label>
+          <div class="vid-url-row">
+            <input class="text-input" id="ugQuick" type="url" placeholder="Paste your UG tab URL…" style="font-size:0.75rem;padding:6px 8px;">
+            <a class="btn sm" id="ugOpen" target="_blank" style="display:none">Open ↗</a>
           </div>
+          <div style="margin-top:6px"><a id="ugSearchLink" href="#" target="_blank" style="font-family:var(--font-label);font-size:0.72rem;color:var(--rust);text-decoration:none;">🔍 Search Ultimate Guitar for this song →</a></div>
+
+          <div style="margin-top:12px;font-size:0.72rem;color:var(--faded);font-style:italic">Tabs open in a new window — Songsterr &amp; UG don't allow embedding in other sites.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Performances -->
+    <div class="full-col">
+      <div class="panel">
+        <div class="panel-header"><span class="icon">🎬</span> Additional Performances / Versions</div>
+        <div class="panel-body">
+          <div class="perf-list" id="perfList"></div>
+          <button class="add-perf-btn" onclick="addPerf()">+ Add Another Performance or Version</button>
         </div>
       </div>
     </div>
@@ -270,17 +289,6 @@
       </div>
     </div>
 
-    <!-- Additional Performances -->
-    <div class="full-col">
-      <div class="panel">
-        <div class="panel-header"><span class="icon">🎬</span> Additional Performances / Versions</div>
-        <div class="panel-body">
-          <div class="perf-list" id="perfList"></div>
-          <button class="add-perf-btn" onclick="addPerf()">+ Add Another Performance or Version</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
@@ -367,30 +375,24 @@ window.loadYT = function () {
   }
 };
 
-// ── Songsterr embed ──
-function ssIdFromUrl(url) {
-  const m = url.match(/tab-s(\d+)/i) || url.match(/\/s(\d+)/i);
-  return m ? m[1] : null;
+// ── Tabs (Songsterr & UG open in new windows — they block embedding) ──
+function tabSearchQuery() {
+  const artist = ($('artistInput').value || (song && song.artist) || '').trim();
+  return `${(song && song.title) || ''} ${artist}`.trim();
 }
-window.loadSS = function () {
-  const url = $('ssInput').value.trim();
-  $('ssTabInput').value = url;
-  wireLink($('ssTabInput'), $('ssTabGo'));
-  const wrap = $('ssWrap');
-  const ssId = ssIdFromUrl(url);
-  wrap.innerHTML = '';
-  if (ssId) {
-    const iframe = document.createElement('iframe');
-    iframe.src = `https://www.songsterr.com/a/wa/song?id=${ssId}`;
-    wrap.appendChild(iframe);
-  } else if (url.includes('songsterr.com')) {
-    const iframe = document.createElement('iframe');
-    iframe.src = url;
-    wrap.appendChild(iframe);
-  } else {
-    wrap.innerHTML = '<div class="ss-placeholder"><div class="ss-icon">🎸</div><span>Enter a Songsterr URL above</span></div>';
-  }
-};
+function updateTabHelpers() {
+  const q = encodeURIComponent(tabSearchQuery());
+  $('ssSearchLink').href = 'https://www.songsterr.com/?pattern=' + q;
+  $('ugSearchLink').href = 'https://www.ultimate-guitar.com/search.php?search_type=title&value=' + q;
+  const ss = $('ssInput').value.trim();
+  $('ssOpen').style.display = ss ? '' : 'none';
+  if (ss) $('ssOpen').href = /^https?:/i.test(ss) ? ss : 'https://' + ss;
+  const ug = $('ugQuick').value.trim();
+  $('ugOpen').style.display = ug ? '' : 'none';
+  if (ug) $('ugOpen').href = /^https?:/i.test(ug) ? ug : 'https://' + ug;
+}
+$('ssInput').addEventListener('input', () => { $('ssTabInput').value = $('ssInput').value; updateTabHelpers(); });
+$('ugQuick').addEventListener('input', () => { $('ugInput').value = $('ugQuick').value; updateTabHelpers(); });
 
 // ── Extra performances ──
 window.addPerf = function (label = '', url = '') {
@@ -524,13 +526,13 @@ function populate() {
   $('ytInput').value = ytUrl;
   if (ytUrl) loadYT();
 
-  const ssUrl = song.ss || '';
+  const ssUrl = song.ss || song.songsterr || '';
   $('ssInput').value = ssUrl;
-  if (ssUrl) loadSS();
 
   $('spotifyInput').value = song.spotify || '';
   $('appleInput').value   = song.apple || '';
   $('ugInput').value      = song.ug || '';
+  $('ugQuick').value      = song.ug || '';
   $('ssTabInput').value   = song.songsterr || ssUrl || '';
   $('tab1Input').value    = song.tab1 || '';
   $('tab2Input').value    = song.tab2 || '';
@@ -554,11 +556,14 @@ function populate() {
   wireLink($('tab2Input'), $('tab2Go'));
 
   updateYtSearch();
-  $('artistInput').addEventListener('input', updateYtSearch);
+  updateTabHelpers();
+  $('artistInput').addEventListener('input', () => { updateYtSearch(); updateTabHelpers(); });
 
-  // Auto-save on change
+  // Auto-save: on change (blur) AND debounced while typing — no Save button needed
+  let autoTimer = null;
   document.querySelectorAll('#content input:not([type=file]):not([type=checkbox]), #content textarea').forEach(el => {
     el.addEventListener('change', saveAll);
+    el.addEventListener('input', () => { clearTimeout(autoTimer); autoTimer = setTimeout(saveAll, 1200); });
   });
   $('knownCheck').addEventListener('change', saveAll);
 }

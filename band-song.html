@@ -56,6 +56,9 @@
   .comment-add { display: flex; gap: 6px; align-items: flex-end; }
   .comment-add textarea { flex: 1; min-height: 44px; }
 
+  .sync-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff8ec; border: 1px solid #e8c98a; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; }
+  .sync-msg { flex: 1 1 200px; font-size: 0.84rem; color: #8a6a2f; font-weight: 500; }
+  @media (max-width: 560px) { .hero-field input.yt { width: 100%; } .hero-field { flex-wrap: wrap; } }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
   .perf-share { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; margin-bottom: 6px; }
@@ -98,6 +101,13 @@
 
   <div class="wrap">
 
+    <!-- Out-of-sync warning -->
+    <div class="sync-bar" id="syncBar" style="display:none">
+      <span class="sync-msg" id="syncMsg">⚠ This band copy differs from your Library copy</span>
+      <button class="btn sm ghost" id="syncFromLib">⬇ Use my Library version</button>
+      <button class="btn sm ghost" id="syncToLib">⬆ Update my Library</button>
+    </div>
+
     <!-- BAND-SHARED ZONE -->
     <div class="panel">
       <div class="panel-header"><span class="icon">👥</span> Band — shared with everyone in <span id="bandNameHdr"></span> <span class="zone-tag shared" style="margin-left:auto">Shared</span></div>
@@ -116,14 +126,6 @@
           <textarea class="text-input" id="bandNotes" placeholder="Notes the whole band should see…"></textarea>
         </div>
 
-        <div style="margin-top:18px">
-          <label class="field-label">Discussion</label>
-          <div class="comment-list" id="commentList"></div>
-          <div class="comment-add">
-            <textarea class="text-input" id="commentText" placeholder="Say something to the band about this song…"></textarea>
-            <button class="btn" id="commentBtn">Post</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -161,8 +163,8 @@
 <script type="module">
 import { auth, db } from './firebase-init.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, getDocs, updateDoc, addDoc, deleteDoc, collection, query, orderBy,
-         onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, getDocs, updateDoc, addDoc, collection, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -170,13 +172,11 @@ const bandId = params.get('band') || '';
 const repId = params.get('id') || '';
 
 let user = null, band = null, rep = null, libSong = null;
-let commentsUnsub = null;
 let bandNotesTimer = null, pvTimer = null;
 
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1700); }
 const repDoc = () => doc(db, 'bands', bandId, 'repertoire', repId);
-const commentsCol = () => collection(db, 'bands', bandId, 'repertoire', repId, 'comments');
 const ytSearch = () => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${rep.title||''} ${rep.artist||''}`.trim());
 function normYt(v) {
   v = (v || '').trim();
@@ -188,7 +188,6 @@ const canDeleteRef = r => r.uid === user.uid || band.createdBy === user.uid;
 
 onAuthStateChanged(auth, async u => {
   user = u;
-  if (commentsUnsub) { commentsUnsub(); commentsUnsub = null; }
   if (!u) { $('gate').style.display = 'block'; $('loading').style.display = 'none'; $('content').style.display = 'none'; return; }
   $('gate').style.display = 'none';
   $('userChip').innerHTML = `${u.photoURL ? `<img src="${esc(u.photoURL)}" alt="">` : ''}<span class="uname">${esc(u.displayName || u.email)}</span>`;
@@ -215,10 +214,6 @@ async function load() {
   refreshPlay();
   renderRefs();
 
-  // live comments
-  commentsUnsub = onSnapshot(query(commentsCol(), orderBy('createdAt')), snap => {
-    renderComments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  }, () => {});
 
   await loadPrivate();
 
@@ -235,13 +230,13 @@ function refreshPlay() {
 // shared quick fields
 $('keyInput').addEventListener('change', () => {
   rep.key = $('keyInput').value.trim();
-  updateDoc(repDoc(), { key: rep.key, updatedAt: serverTimestamp() }).then(() => toast('Key saved for the band')).catch(e => toast('Save failed'));
+  updateDoc(repDoc(), { key: rep.key, updatedAt: serverTimestamp() }).then(() => toast('Key saved for the band')).then(() => renderSyncBar()).catch(e => toast('Save failed'));
 });
 $('ytInput').addEventListener('change', () => {
   rep.youtube = normYt($('ytInput').value);
   $('ytInput').value = rep.youtube;
   refreshPlay();
-  updateDoc(repDoc(), { youtube: rep.youtube, updatedAt: serverTimestamp() }).then(() => toast('Main video saved')).catch(e => toast('Save failed'));
+  updateDoc(repDoc(), { youtube: rep.youtube, updatedAt: serverTimestamp() }).then(() => toast('Main video saved')).then(() => renderSyncBar()).catch(e => toast('Save failed'));
 });
 
 // ── Reference links ──
@@ -296,34 +291,6 @@ $('bandNotes').addEventListener('input', () => {
   }, 800);
 });
 
-// ── Comments ──
-function renderComments(items) {
-  const list = $('commentList');
-  list.innerHTML = '';
-  if (!items.length) { list.innerHTML = '<div class="ref-meta" style="padding:4px 2px">No comments yet.</div>'; return; }
-  items.forEach(c => {
-    const d = document.createElement('div');
-    d.className = 'comment';
-    const when = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-    d.innerHTML = `
-      ${c.uid === user.uid ? '<button class="c-del" title="Delete your comment">✕</button>' : ''}
-      <div class="c-head"><span class="c-name">${esc(c.name || 'Member')}</span><span class="c-time">${esc(when)}</span></div>
-      <div class="c-text">${esc(c.text || '')}</div>`;
-    const del = d.querySelector('.c-del');
-    if (del) del.addEventListener('click', () => deleteDoc(doc(db, 'bands', bandId, 'repertoire', repId, 'comments', c.id)));
-    list.appendChild(d);
-  });
-  list.scrollTop = list.scrollHeight;
-}
-$('commentBtn').addEventListener('click', async () => {
-  const text = $('commentText').value.trim();
-  if (!text) return;
-  try {
-    await addDoc(commentsCol(), { text, uid: user.uid, name: user.displayName || user.email || 'Member', createdAt: serverTimestamp() });
-    $('commentText').value = '';
-  } catch (e) { toast('Post failed: ' + (e.code || e.message)); }
-});
-
 // ── Private zone ──
 async function loadPrivate() {
   libSong = null;
@@ -337,10 +304,43 @@ async function loadPrivate() {
   } catch {}
   renderPrivate();
 }
+// ── Library ↔ band sync ──
+function syncDiffs() {
+  if (!libSong) return [];
+  const d = [];
+  if ((libSong.key || '') !== (rep.key || '')) d.push(`key (yours: ${libSong.key || '—'} · band: ${rep.key || '—'})`);
+  if ((libSong.youtube || '') !== (rep.youtube || '')) d.push('main video');
+  return d;
+}
+function renderSyncBar() {
+  const diffs = syncDiffs();
+  $('syncBar').style.display = diffs.length ? '' : 'none';
+  if (diffs.length) $('syncMsg').textContent = '⚠ Differs from your Library copy: ' + diffs.join(', ') + '. (A band can play it differently on purpose — sync only if you want.)';
+}
+$('syncFromLib').addEventListener('click', async () => {
+  if (!libSong) return;
+  rep.key = libSong.key || ''; rep.youtube = libSong.youtube || '';
+  try {
+    await updateDoc(repDoc(), { key: rep.key, youtube: rep.youtube, updatedAt: serverTimestamp() });
+    $('keyInput').value = rep.key; $('ytInput').value = rep.youtube; refreshPlay(); renderSyncBar();
+    toast('Band copy now matches your Library');
+  } catch (e) { toast('Sync failed: ' + (e.code || e.message)); }
+});
+$('syncToLib').addEventListener('click', async () => {
+  if (!libSong) return;
+  libSong.key = rep.key || ''; libSong.youtube = rep.youtube || '';
+  try {
+    await updateDoc(doc(db, 'users', user.uid, 'songs', libSong.id), { key: libSong.key, youtube: libSong.youtube, updatedAt: serverTimestamp() });
+    renderSyncBar();
+    toast('Your Library now matches the band copy');
+  } catch (e) { toast('Sync failed: ' + (e.code || e.message)); }
+});
+
 function renderPrivate() {
   const has = !!libSong;
   $('privateEmpty').style.display = has ? 'none' : '';
   $('privateFields').style.display = has ? '' : 'none';
+  renderSyncBar();
   if (!has) return;
   $('pvStructure').value = libSong.structure || '';
   $('pvTricky').value = libSong.tricky || '';

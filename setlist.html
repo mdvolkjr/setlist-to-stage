@@ -89,6 +89,23 @@
   .sl-search:hover { background: var(--brown) !important; color: #fff !important; }
   .sl-notes { background: rgba(62,125,79,0.12) !important; color: var(--green) !important; }
   .sl-notes:hover { background: var(--green) !important; color: #fff !important; }
+  .sl-brk { display: none; }
+
+  /* ── Mobile: song rows wrap to two lines (title line + controls line) ── */
+  @media (max-width: 640px) {
+    .wrap { padding: 18px 10px 70px; }
+    .toolbar { gap: 6px; }
+    .toolbar .btn { padding: 7px 10px; font-size: 0.74rem; }
+    .sl-song { flex-wrap: wrap; row-gap: 8px; }
+    .sl-brk { display: block; width: 100%; height: 0; }
+    .sl-song-main { min-width: 0; flex: 1 1 auto; }
+    .sl-search { display: none !important; }   /* 🔍 lives on the song page too */
+    .sl-setsel { max-width: 64px; }
+    .picker-head input[type=text], .picker-new input { flex-basis: 100%; }
+    .set-head { flex-wrap: wrap; row-gap: 6px; }
+    .stage-controls .size-label { display: none; }
+    .pr-nav .btn { flex: 1; justify-content: center; }
+  }
   .sl-setsel { flex-shrink: 0; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 7px; font-family: var(--font-label); font-size: 0.62rem; color: var(--ink); padding: 3px; max-width: 74px; }
   .sl-rm { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(139,58,26,0.2); background: rgba(139,58,26,0.1); color: var(--rust); cursor: pointer; font-size: 12px; flex-shrink: 0; }
   .sl-rm:hover { background: var(--rust); color: #fff; }
@@ -149,6 +166,11 @@
   .pr-key { color: #f0c080; font-style: normal; font-family: var(--font-label); }
   .pr-video { position: relative; width: 100%; padding-bottom: 56.25%; border-radius: 12px; overflow: hidden; background: #000; }
   .pr-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+  .pr-band-notes { margin-top: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(201,173,130,0.25); border-radius: 10px; padding: 10px 14px; text-align: left; font-size: 0.9rem; white-space: pre-wrap; }
+  .pr-bn-lbl { display: block; font-family: var(--font-label); font-weight: 700; font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tan); margin-bottom: 4px; }
+  .pr-refs { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .pr-ref { font-family: var(--font-label); font-size: 0.76rem; color: #f0c080; text-decoration: none; background: rgba(179,74,38,0.25); border: 1px solid rgba(201,173,130,0.3); border-radius: 999px; padding: 5px 12px; }
+  .pr-ref:hover { background: rgba(179,74,38,0.5); }
   .pr-nav { display: flex; gap: 10px; justify-content: center; padding: 16px; border-top: 1px solid rgba(200,169,122,0.2); }
   .pr-nav .btn[disabled] { opacity: 0.35; cursor: default; }
 
@@ -551,6 +573,7 @@ function songRow(sid, si, pos) {
       <div class="sl-song-title ${s ? '' : 'missing'}">${s || nick ? esc(displayName(sid)) : 'Removed from song list'}</div>
       <div class="sl-song-artist">${nick ? esc((s ? s.title : '') + (s && s.artist ? ' · ' + s.artist : '')) : (s ? esc(s.artist || '') : '')}</div>
     </div>
+    <span class="sl-brk"></span>
     ${s && s.key ? `<span class="sl-key">${esc(s.key)}</span>` : ''}
     ${s ? `<a class="sl-play" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Play saved video' : 'Search YouTube'}">▶</a>` : ''}
     ${s ? `<a class="sl-play sl-notes" href="band-song.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sid)}" title="Notes, references & discussion">📖</a>` : ''}
@@ -944,7 +967,10 @@ function renderPractice() {
       ${id
         ? `<div class="pr-video"><iframe src="https://www.youtube.com/embed/${id}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`
         : `<a class="btn" href="${esc(ytLink(s))}" target="_blank">▶ Find on YouTube</a>`}
-      <div style="margin-top:14px"><a class="btn ghost sm" href="band-song.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sid)}" target="_blank">📖 Notes, references & discussion</a></div>
+      ${s.bandNotes ? `<div class="pr-band-notes"><span class="pr-bn-lbl">Band notes</span>${esc(s.bandNotes)}</div>` : ''}
+      ${Array.isArray(s.refs) && s.refs.length ? `<div class="pr-refs">${s.refs.map(r =>
+        `<a class="pr-ref" href="${esc(r.url)}" target="_blank">▶ ${esc(r.note || 'Reference')}</a>`).join('')}</div>` : ''}
+      <div style="margin-top:14px"><a class="btn ghost sm" href="band-song.html?band=${encodeURIComponent(bandId)}&id=${encodeURIComponent(sid)}" target="_blank">📖 Full song page</a></div>
     </div>`;
   $('prPrev').disabled = prIdx === 0;
   $('prNext').textContent = prIdx === prQueue.length - 1 ? 'Finish ✓' : 'Next ▶';

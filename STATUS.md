@@ -34,6 +34,11 @@ This is the first thing to read. It reflects the app as it actually is, not the 
 - **Bulk import** (`index.html`, "⇪ Bulk") — paste a list → heuristic parser (`lib/import.js`, 8 tests) → review table with duplicate detection + edit → batch add.
 - **Band sharing** — each Profile shows a copyable **Member ID**; band **Settings → Add a bandmate** by that ID. Members share the band's Song List and setlists (no security-rule change needed — membership already governs access).
 
+## 💡 Backlog (user-requested, deliberately deferred)
+
+- **Gig checklist on a setlist/gig**: gear logistics (amps, mixer, "is sound provided?"), who-brings-what, and **pay** so members know what they're making. Natural home: a "Logistics" panel on the setlist page, fields visible to all members.
+- Song comments/discussion thread — built then removed at user request; shared band notes kept instead. Revisit if bands want it.
+
 ## ⛔ Not started (next sessions)
 
 - **Sheet-music / tab file upload + on-screen viewer** (schema has external tab links; file upload+viewer not yet).

@@ -41,6 +41,8 @@
   .hero-members .member-chip { background: rgba(255,255,255,0.09); color: rgba(230,214,185,0.9); border: 1px solid rgba(201,173,130,0.3); }
   .song-open { cursor: pointer; }
   .song-open:hover .song-title { color: var(--rust); }
+  .oos-badge { flex-shrink: 0; font-size: 12px; cursor: help; background: #fff4dd; border: 1px solid #e8c98a; border-radius: 999px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+  @media (max-width: 620px) { .song-row { flex-wrap: wrap; row-gap: 6px; } }
 
   .wrap { max-width: 940px; margin: 0 auto; padding: 26px 18px 90px; }
 
@@ -85,7 +87,7 @@
   .song-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.5); border: 1px solid var(--line); border-radius: 7px; padding: 9px 12px; }
   .song-main { flex: 1; min-width: 0; }
   .song-title { font-family: var(--font-display); font-weight: 700; color: var(--brown); font-size: 0.92rem; line-height: 1.2; }
-  .song-artist { font-size: 0.75rem; color: var(--faded); font-style: italic; }
+  .song-artist { font-size: 0.88rem; color: var(--faded); }
   .key-input { width: 48px; flex-shrink: 0; text-align: center; background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 7px; padding: 5px 3px; font-family: var(--font-label); font-size: 0.8rem; color: var(--ink); outline: none; }
   .key-input:focus { border-color: var(--rust); background: #fff; }
   .link-icons { display: flex; gap: 5px; flex-shrink: 0; }
@@ -332,6 +334,7 @@ let setlistsUnsub = null;
 let setlistCache = [];
 let repEditingId = null;   // song-list row open for inline edit
 let repFilterTerm = '';
+let libIndex = null;       // your library, for out-of-sync detection
 let repSortKey = 'title';
 let repSortDir = 1;
 
@@ -405,6 +408,12 @@ async function loadBand() {
     if (!$('libPicker').classList.contains('hidden')) renderLibPicker($('libSearch').value);
   }, err => toast('Song list error: ' + err.message));
 
+  // Library index for out-of-sync badges (once, non-blocking)
+  getDocs(collection(db, 'users', user.uid, 'songs')).then(snap => {
+    libIndex = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!repEditingId) renderRepertoire();
+  }).catch(() => {});
+
   // Live setlists
   setlistsUnsub = onSnapshot(query(setlistsCol()), snap3 => {
     setlistCache = snap3.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -468,8 +477,17 @@ function renderRepertoire() {
   shown.forEach(s => list.appendChild(repRow(s)));
 }
 
+function outOfSync(s) {
+  if (!libIndex) return false;
+  const m = libIndex.find(l => l.id === s.sourceSongId)
+    || libIndex.find(l => (l.title || '').toLowerCase() === (s.title || '').toLowerCase()
+                       && (l.artist || '').toLowerCase() === (s.artist || '').toLowerCase());
+  return !!m && ((m.key || '') !== (s.key || '') || (m.youtube || '') !== (s.youtube || ''));
+}
+
 function repRow(s) {
   const editing = repEditingId === s.id;
+  const oos = outOfSync(s);
   const item = document.createElement('div');
   item.className = 'song-item' + (editing ? ' editing' : '');
   item.innerHTML = `
@@ -478,6 +496,7 @@ function repRow(s) {
         <div class="song-title c-title">${esc(s.title)}</div>
         <div class="song-artist c-artist">${esc(s.artist || '—')}</div>
       </div>
+      ${oos ? `<span class="oos-badge" title="Key or video differs from your Library copy — open the song page to sync">⚠</span>` : ''}
       <input class="key-input" type="text" maxlength="4" placeholder="key" value="${esc(s.key || '')}" title="Key">
       <div class="link-icons">
         <a class="lnk yt ${s.youtube ? '' : 'search'}" href="${esc(ytLink(s))}" target="_blank" title="${s.youtube ? 'Open saved video' : 'Search YouTube'}">▶</a>
